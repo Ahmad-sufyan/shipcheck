@@ -34,6 +34,8 @@ export interface RawFinding {
   /** Override, e.g. escalate to critical on DB writes. */
   severity?: Severity;
   confidence?: Confidence;
+  /** Overrides the rule's advisory default for this finding. */
+  advisory?: boolean;
 }
 
 /** What the report contains. */
@@ -161,6 +163,8 @@ export interface ShipcheckConfig {
   /** Extra function names that count as auth checks. */
   authHelpers: string[];
   rateLimitHelpers: string[];
+  /** Globs of intentionally public route paths, e.g. '/api/public/**'. */
+  publicPaths: string[];
   rules: Record<string, 'off' | Severity>;
 }
 

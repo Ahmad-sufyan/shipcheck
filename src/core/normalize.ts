@@ -35,7 +35,7 @@ export function toFinding(rule: Rule, raw: RawFinding): Finding {
     category: rule.category,
     severity: raw.severity ?? rule.severity,
     confidence: raw.confidence ?? rule.confidence,
-    advisory: rule.advisory ?? false,
+    advisory: raw.advisory ?? rule.advisory ?? false,
     source: rule.source ?? 'static',
     file,
     line: raw.line ?? null,

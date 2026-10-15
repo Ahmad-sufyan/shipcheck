@@ -44,6 +44,7 @@ export const RawFindingSchema = z.object({
   fix: z.string().optional(),
   severity: SeveritySchema.optional(),
   confidence: ConfidenceSchema.optional(),
+  advisory: z.boolean().optional(),
 });
 
 export const FindingSchema = z.object({
@@ -96,6 +97,7 @@ export const ShipcheckConfigSchema = z
     ignorePaths: z.array(z.string()).default([]),
     authHelpers: z.array(z.string()).default([]),
     rateLimitHelpers: z.array(z.string()).default([]),
+    publicPaths: z.array(z.string()).default([]),
     rules: z.record(z.string(), RuleOverrideSchema).default({}),
   })
   .transform(({ $schema: _schema, ...config }) => config);
