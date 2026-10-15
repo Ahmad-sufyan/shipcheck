@@ -13,8 +13,8 @@ const git = (tracked: string[], ignored: string[]) =>
       if (command !== 'git') return 'missing';
       if (args[0] === 'rev-parse') return { stdout: '\n' };
       if (args[0] === 'ls-files') return { stdout: tracked.map((f) => `${f}\0`).join('') };
-      const hits = args.slice(3).filter((f) => ignored.includes(f));
-      return { exitCode: hits.length ? 0 : 1, stdout: hits.map((f) => `${f}\0`).join('') };
+      const hits = args.slice(2).filter((f) => ignored.includes(f));
+      return { exitCode: hits.length ? 0 : 1, stdout: hits.map((f) => `${f}\n`).join('') };
     }).exec,
   );
 

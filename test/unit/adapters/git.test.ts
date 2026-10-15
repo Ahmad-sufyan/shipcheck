@@ -18,14 +18,14 @@ describe('git adapter', () => {
     expect(await gitRepo(ROOT, toolContext(fakeExec().exec))).toBeNull();
   });
 
-  it('lists tracked and ignored paths with NUL-separated output', async () => {
-    const { exec, calls } = fakeExec((_command, args) => (args[0] === 'ls-files' ? { stdout: '.env.local\0' } : { exitCode: 0, stdout: '.env\0' }));
+  it('lists tracked (NUL-separated) and ignored (one per line) paths', async () => {
+    const { exec, calls } = fakeExec((_command, args) => (args[0] === 'ls-files' ? { stdout: '.env.local\0' } : { exitCode: 0, stdout: '.env\n' }));
     const tools = toolContext(exec);
     expect(await gitTracked(ROOT, tools, ['.env.local', '.env'])).toEqual(new Set(['.env.local']));
     expect(await gitIgnored(ROOT, tools, ['.env'])).toEqual(new Set(['.env']));
     expect(calls.map((c) => c.args)).toEqual([
       ['ls-files', '-z', '--', '.env.local', '.env'],
-      ['check-ignore', '-z', '--', '.env'],
+      ['check-ignore', '--', '.env'],
     ]);
   });
 

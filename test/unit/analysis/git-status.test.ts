@@ -26,7 +26,7 @@ describe('gitStatus', () => {
     const { exec, calls } = fakeExec((_command, args) => {
       if (args[0] === 'rev-parse') return { stdout: '\n' };
       if (args[0] === 'ls-files') return { stdout: '.env\0' };
-      return { exitCode: 0, stdout: '.env.local\0' };
+      return { exitCode: 0, stdout: '.env.local\n' };
     });
     const ctx = memoryContext({ '.env': 'A=1', '.env.local': 'B=2', '.env.test.local': 'C=3' }, {}, { tools: toolContext(exec) });
     expect(Object.fromEntries(await gitStatus(ctx, ['.env', '.env.local', '.env.test.local']))).toEqual({
@@ -34,7 +34,7 @@ describe('gitStatus', () => {
       '.env.local': { tracked: false, ignored: true },
       '.env.test.local': { tracked: false, ignored: false },
     });
-    expect(calls.at(-1)?.args).toEqual(['check-ignore', '-z', '--', '.env.local', '.env.test.local']);
+    expect(calls.at(-1)?.args).toEqual(['check-ignore', '--', '.env.local', '.env.test.local']);
   });
 
   it('falls back to the root .gitignore without git', async () => {

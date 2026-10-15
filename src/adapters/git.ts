@@ -22,6 +22,10 @@ export function gitRepo(root: string, tools: ToolContext): Promise<GitRepo | nul
   return repo;
 }
 
+function lines(stdout: string): Set<string> {
+  return new Set(stdout.split(/\r?\n/).filter(Boolean));
+}
+
 function nulSeparated(stdout: string): Set<string> {
   return new Set(stdout.split('\0').filter(Boolean));
 }
@@ -39,6 +43,7 @@ export async function gitTracked(root: string, tools: ToolContext, paths: readon
  */
 export async function gitIgnored(root: string, tools: ToolContext, paths: readonly string[]): Promise<Set<string> | null> {
   if (!paths.length) return new Set();
-  const result = await tools.exec('git', ['check-ignore', '-z', '--', ...paths], { cwd: root, timeoutMs: TOOL_TIMEOUT_MS });
-  return result.missing || (result.exitCode !== 0 && result.exitCode !== 1) ? null : nulSeparated(result.stdout);
+  // -z only works together with --stdin, which the exec runner does not feed, so read one path per line.
+  const result = await tools.exec('git', ['check-ignore', '--', ...paths], { cwd: root, timeoutMs: TOOL_TIMEOUT_MS });
+  return result.missing || (result.exitCode !== 0 && result.exitCode !== 1) ? null : lines(result.stdout);
 }
