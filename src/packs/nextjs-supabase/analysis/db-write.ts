@@ -56,12 +56,12 @@ export function chainCalls(call: CallExpression): CallExpression[] {
   }
 }
 
-function isSupabaseChain(chain: CallExpression[]): boolean {
+export function isSupabaseChain(chain: CallExpression[]): boolean {
   return chain.some((c) => calleeName(c) === 'from') && !chain.some((c) => calleeText(c).includes('storage.'));
 }
 
 /** `prisma.user.create()` style: client.model.method() */
-function prismaMethod(call: CallExpression): string | undefined {
+export function prismaMethod(call: CallExpression): string | undefined {
   const callee = unwrapExpression(call.getExpression());
   if (!Node.isPropertyAccessExpression(callee)) return undefined;
   const model = unwrapExpression(callee.getExpression());
@@ -75,7 +75,7 @@ function sqlTextOf(call: CallExpression): string | undefined {
   return SQL_METHODS.has(calleeName(call)) ? staticText(call.getArguments()[0]) : undefined;
 }
 
-function isSqlTag(node: TaggedTemplateExpression): boolean {
+export function isSqlTag(node: TaggedTemplateExpression): boolean {
   return /(?:^|\.)sql$/i.test(node.getTag().getText());
 }
 
@@ -171,4 +171,15 @@ export function touchesData(fn: Node): DataAccess {
     if (isHttpCall(node)) access.fetch = true;
   }
   return access;
+}
+
+/** The outermost call of the method chain `call` belongs to (`a.from().eq()` for the `from()` call). */
+export function chainTop(call: CallExpression): CallExpression {
+  let top: CallExpression = call;
+  for (;;) {
+    const access = top.getParent();
+    const outer = access?.getParent();
+    if (access && Node.isPropertyAccessExpression(access) && outer && Node.isCallExpression(outer) && outer.getExpression() === access) top = outer;
+    else return top;
+  }
 }

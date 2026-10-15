@@ -285,3 +285,9 @@ export function isExportedStatement(statement: Node | undefined): boolean {
   if (Node.isFunctionDeclaration(statement) || Node.isVariableStatement(statement) || Node.isClassDeclaration(statement)) return statement.isExported();
   return Node.isExportAssignment(statement);
 }
+
+/** The node naming the called method (`eq` in `q.eq('id', x)`), for reporting at the method's own line. */
+export function calleeNameNode(call: CallExpression): Node {
+  const callee = unwrapExpression(call.getExpression());
+  return Node.isPropertyAccessExpression(callee) ? callee.getNameNode() : call;
+}

@@ -98,6 +98,13 @@ function middlewareBlocks(fn: Node, ctx: ScanContext): boolean {
   return /\.redirect\(|\.rewrite\(|status:\s*40[13]|auth\.protect\(|Unauthorized/.test(text);
 }
 
+/** Whether the project has a proxy/middleware that verifies the user and blocks unauthenticated requests. */
+export function middlewareChecksAuth(ctx: ScanContext): boolean {
+  const middleware = ctx.next.middleware();
+  const fn = middleware ? middlewareFunction(ctx, middleware.file) : undefined;
+  return fn !== undefined && middlewareBlocks(fn, ctx);
+}
+
 /** Whether an auth-checking proxy/middleware runs for `routePath`. */
 export function middlewareAuthCovers(routePath: string, ctx: ScanContext): boolean {
   const middleware = ctx.next.middleware();
