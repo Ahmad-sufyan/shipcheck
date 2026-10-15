@@ -83,6 +83,13 @@ export interface Rule {
   run(ctx: ScanContext): RawFinding[] | Promise<RawFinding[]>;
 }
 
+/** A named group of rules for one stack combination. */
+export interface RulePack {
+  id: string;
+  title: string;
+  rules: Rule[];
+}
+
 export interface RouteHandler {
   file: string;
   routePath: string;
