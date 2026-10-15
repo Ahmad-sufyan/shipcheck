@@ -75,3 +75,18 @@ export function isPlaceholder(value: string): boolean {
 export function looksRandom(value: string, minLength = 20, minEntropy = 3.5): boolean {
   return value.length >= minLength && shannonEntropy(value) > minEntropy;
 }
+
+/** Environment variable names that usually hold secrets. */
+export const SECRET_ENV_NAME = /SECRET|PRIVATE|SERVICE_ROLE|PASSWORD|PASSWD|API_KEY|TOKEN|CREDENTIAL/i;
+
+const EXAMPLE_ENV_FILE = /^\.env\.(?:example|sample|template|dist|defaults)$|^\.dev\.vars\.(?:example|sample)$/i;
+
+/** Example env files, which are meant to be committed with placeholder values. */
+export function isExampleEnvFile(file: string): boolean {
+  return EXAMPLE_ENV_FILE.test(file.slice(file.lastIndexOf('/') + 1));
+}
+
+/** URLs with an embedded password, e.g. postgres://user:pass@host/db. */
+export function hasUrlCredentials(value: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:[^\s@/]+@/i.test(value);
+}
