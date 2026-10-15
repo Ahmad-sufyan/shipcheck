@@ -54,7 +54,7 @@ describe('fixtures/demo-app context', () => {
   it('exposes the Next.js structure to rules', async () => {
     const { ctx, skipped } = await buildContext(DEMO, loadUserConfig(DEMO).config);
     expect(skipped).toEqual([]);
-    expect(ctx.next.middleware()).toEqual({ file: 'proxy.ts', matchers: ['/dashboard/:path*'] });
+    expect(ctx.next.middleware()).toEqual({ file: 'middleware.ts', matchers: ['/dashboard/:path*'] });
     expect(ctx.next.routeHandlers().map((h) => `${h.method} ${h.routePath}`)).toEqual(expect.arrayContaining([
       'GET /api/admin/stats',
       'POST /api/admin/users',
