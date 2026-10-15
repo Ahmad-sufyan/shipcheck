@@ -98,6 +98,7 @@ export const ShipcheckConfigSchema = z
     authHelpers: z.array(z.string()).default([]),
     rateLimitHelpers: z.array(z.string()).default([]),
     publicPaths: z.array(z.string()).default([]),
+    webhookVerifiers: z.array(z.string()).default([]),
     rules: z.record(z.string(), RuleOverrideSchema).default({}),
   })
   .transform(({ $schema: _schema, ...config }) => config);
@@ -118,6 +119,7 @@ export const RuleMetaSchema = z.object({
   falsePositiveNote: z.string().min(1),
   cwe: z.string().regex(/^CWE-\d+$/).optional(),
   references: z.array(z.string()).optional(),
+  timeoutMs: z.number().int().positive().optional(),
   run: z.custom<(...args: never[]) => unknown>((v) => typeof v === 'function', 'run must be a function'),
 });
 

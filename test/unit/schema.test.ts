@@ -72,6 +72,7 @@ describe('schema', () => {
       authHelpers: [],
       rateLimitHelpers: [],
       publicPaths: [],
+      webhookVerifiers: [],
       rules: {},
     });
   });

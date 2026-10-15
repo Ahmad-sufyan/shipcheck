@@ -1,4 +1,5 @@
 import type { Node, SourceFile } from 'ts-morph';
+import type { ToolContext } from './adapters/exec.js';
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type Confidence = 'high' | 'medium' | 'low';
@@ -82,6 +83,8 @@ export interface Rule {
   falsePositiveNote: string;
   cwe?: string;
   references?: string[];
+  /** Overrides the runner's per-rule timeout; tool-backed rules need longer than the 10 s default. */
+  timeoutMs?: number;
   run(ctx: ScanContext): RawFinding[] | Promise<RawFinding[]>;
 }
 
@@ -155,6 +158,10 @@ export interface ScanContext {
     isClientFile(file: string): boolean;
   };
   config: ShipcheckConfig;
+  /** How external tools are run (injectable exec, offline mode). Absent when tools are disabled. */
+  tools?: ToolContext;
+  /** Records a check that could not run (missing tool, offline, ...) in ScanResult.skipped. */
+  skip?(check: string, reason: string): void;
 }
 
 /** From shipcheck.config.json, zod-validated, all optional. */
@@ -165,6 +172,8 @@ export interface ShipcheckConfig {
   rateLimitHelpers: string[];
   /** Globs of intentionally public route paths, e.g. '/api/public/**'. */
   publicPaths: string[];
+  /** Extra function names that count as webhook signature verification. */
+  webhookVerifiers: string[];
   rules: Record<string, 'off' | Severity>;
 }
 

@@ -4,7 +4,7 @@ import { ShipcheckError } from '../../../src/core/errors.js';
 import { loadUserConfig } from '../../../src/context/user-config.js';
 import { tmpProject } from '../../helpers/context.js';
 
-const defaults = { ignorePaths: [], authHelpers: [], rateLimitHelpers: [], publicPaths: [], rules: {} };
+const defaults = { ignorePaths: [], authHelpers: [], rateLimitHelpers: [], publicPaths: [], webhookVerifiers: [], rules: {} };
 
 describe('loadUserConfig', () => {
   it('returns defaults when there is no config file', () => {

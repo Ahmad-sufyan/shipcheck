@@ -45,7 +45,7 @@ export async function runRules(rules: readonly Rule[], ctx: ScanContext, options
   }
 
   const settled = await Promise.allSettled(
-    applicable.map((rule) => withTimeout(Promise.resolve().then(() => rule.run(ctx)), timeoutMs)),
+    applicable.map((rule) => withTimeout(Promise.resolve().then(() => rule.run(ctx)), rule.timeoutMs ?? timeoutMs)),
   );
 
   const runs: RuleRun[] = [];

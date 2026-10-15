@@ -3,6 +3,7 @@ import { isClientFile } from '../stacks/nextjs/client-boundary.js';
 import { findMiddleware } from '../stacks/nextjs/middleware.js';
 import { findRouteHandlers } from '../stacks/nextjs/routes.js';
 import { findServerActions } from '../stacks/nextjs/server-actions.js';
+import type { ToolContext } from '../adapters/exec.js';
 import type { ScanContext, ShipcheckConfig } from '../types.js';
 import { createAstCache } from './ast.js';
 import {
@@ -37,12 +38,16 @@ function once<T>(compute: () => T): () => T {
 }
 
 /** Lists files under `root` (honouring ignores) and builds the scan context from disk. */
-export async function buildContext(root: string, config: ShipcheckConfig): Promise<BuiltContext> {
-  const files = await listFiles(root, config.ignorePaths);
-  return createContext(createDiskSource(root, files), config);
+export interface ContextOptions {
+  tools?: ToolContext;
 }
 
-export function createContext(source: ProjectSource, config: ShipcheckConfig): BuiltContext {
+export async function buildContext(root: string, config: ShipcheckConfig, options: ContextOptions = {}): Promise<BuiltContext> {
+  const files = await listFiles(root, config.ignorePaths);
+  return createContext(createDiskSource(root, files), config, options);
+}
+
+export function createContext(source: ProjectSource, config: ShipcheckConfig, options: ContextOptions = {}): BuiltContext {
   const skipped: Skipped[] = [];
   const readText = (file: string) => source.readText(file);
   const getSourceFile = createAstCache(readText);
@@ -78,6 +83,10 @@ export function createContext(source: ProjectSource, config: ShipcheckConfig): B
       },
     },
     config,
+    ...(options.tools ? { tools: options.tools } : {}),
+    skip(check, reason) {
+      skipped.push({ check, reason });
+    },
   };
   return { ctx, skipped };
 }

@@ -70,6 +70,13 @@ describe('runRules', () => {
     expect(outcome.ruleErrors).toEqual([{ ruleId: 'A-001', message: 'timed out after 50 ms' }]);
   });
 
+  it('lets a rule extend its own timeout', async () => {
+    const ctx = memoryContext(nextApp);
+    const slow = () => new Promise<[]>((resolve) => setTimeout(() => resolve([]), 120));
+    const outcome = await runRules([testRule({ id: 'A-001', timeoutMs: 1000, run: slow }), testRule({ id: 'B-001', run: slow })], ctx, { timeoutMs: 50 });
+    expect(outcome.ruleErrors).toEqual([{ ruleId: 'B-001', message: 'timed out after 50 ms' }]);
+  });
+
   it('runs rules concurrently', async () => {
     const ctx = memoryContext(nextApp);
     let releaseA!: () => void;
