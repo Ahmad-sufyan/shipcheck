@@ -41,10 +41,11 @@ import { integ005 } from './rules/integ-005-system-prompt-input.js';
 import { rate001 } from './rules/rate-001-sensitive-endpoint.js';
 import { rate002 } from './rules/rate-002-ai-endpoint.js';
 import { rate003 } from './rules/rate-003-memory-limiter.js';
+import { rate004 } from './rules/rate-004-spoofable-key.js';
 import { secret006SourceMaps } from './rules/secret-006-source-maps.js';
 
 export const nextjsSupabasePack: RulePack = {
   id: 'nextjs-supabase',
   title: 'Next.js App Router + Supabase',
-  rules: [auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth008, auth009, auth010, auth011, auth012, auth013, authz001, authz002, authz003, authz004, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input002, input003, input004, input005, input006, input007, input008, input009, input010, input011, input012, integ001, integ002, integ003, integ004, integ005, rate001, rate002, rate003, secret006SourceMaps],
+  rules: [auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth008, auth009, auth010, auth011, auth012, auth013, authz001, authz002, authz003, authz004, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input002, input003, input004, input005, input006, input007, input008, input009, input010, input011, input012, integ001, integ002, integ003, integ004, integ005, rate001, rate002, rate003, rate004, secret006SourceMaps],
 };

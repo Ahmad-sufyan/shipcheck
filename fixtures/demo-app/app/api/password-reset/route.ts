@@ -7,6 +7,7 @@ import { rateLimit } from '@/lib/rate-limit'
 const ResetSchema = z.object({ email: z.email() })
 
 export async function POST(request: Request) {
+  // shipcheck-expect: RATE-004
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown'
   if (!rateLimit(`reset:${ip}`, 3)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
