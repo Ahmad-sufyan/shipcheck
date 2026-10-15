@@ -76,6 +76,6 @@ describe('fixtures/demo-app context', () => {
     expect(['components/admin-client.tsx', 'components/admin-panel.tsx', 'components/token-store.ts'].every((f) => ctx.next.isClientFile(f))).toBe(true);
     expect(ctx.next.isClientFile('components/comment.tsx')).toBe(false);
     expect(ctx.nextConfig?.options.productionBrowserSourceMaps).toEqual({ value: true, line: 9, dynamic: false });
-    expect(ctx.sqlMigrations.map((m) => m.file)).toEqual(['supabase/migrations/0001_init.sql']);
+    expect(ctx.sqlMigrations.map((m) => m.file)).toEqual(['supabase/migrations/0001_init.sql', 'supabase/migrations/0002_storage.sql']);
   });
 });
