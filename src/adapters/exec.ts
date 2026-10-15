@@ -1,6 +1,7 @@
 import { statSync } from 'node:fs';
 import { delimiter, isAbsolute, join } from 'node:path';
 import { execa } from 'execa';
+import { redactEvidence } from '../core/redact.js';
 
 /** External tools get two minutes; the runner extends tool-backed rules' timeouts to match. */
 export const TOOL_TIMEOUT_MS = 120_000;
@@ -66,3 +67,38 @@ export const defaultExec: ExecFn = async (command, args, { cwd, timeoutMs }) => 
     missing: false,
   };
 };
+
+export interface JsonToolRun {
+  command: string;
+  args: readonly string[];
+  cwd: string;
+  /** Appended to the skip reason when the binary is missing. */
+  installHint: string;
+}
+
+/** First non-empty stderr line, redacted and shortened, for skip reasons. */
+function firstLine(text: string): string {
+  return redactEvidence(text.split('\n').map((line) => line.trim()).find(Boolean) ?? '');
+}
+
+export type JsonToolResult = { ok: true; json: unknown; exitCode: number | null } | { ok: false; reason: string; exitCode: number | null };
+
+/**
+ * Runs a tool that prints JSON on stdout. Any exit code counts as success when stdout parses (most
+ * scanners exit non-zero when they find something); a missing binary, a timeout or unparseable output
+ * becomes a reason to skip the check.
+ */
+export async function runJsonTool(tools: ToolContext, { command, args, cwd, installHint }: JsonToolRun): Promise<JsonToolResult> {
+  const result = await tools.exec(command, args, { cwd, timeoutMs: TOOL_TIMEOUT_MS });
+  if (result.missing) return { ok: false, reason: `${command} is not installed; ${installHint}`, exitCode: null };
+  if (result.timedOut) return { ok: false, reason: `${command} timed out after ${TOOL_TIMEOUT_MS / 1000} s`, exitCode: null };
+  const stdout = result.stdout.trim();
+  if (stdout) {
+    try {
+      return { ok: true, json: JSON.parse(stdout), exitCode: result.exitCode };
+    } catch {
+      // fall through: report stderr instead
+    }
+  }
+  return { ok: false, reason: `${command} failed (exit code ${result.exitCode ?? 'none'}): ${firstLine(result.stderr) || 'no JSON output'}`, exitCode: result.exitCode };
+}
