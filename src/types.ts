@@ -37,6 +37,8 @@ export interface RawFinding {
   confidence?: Confidence;
   /** Overrides the rule's advisory default for this finding. */
   advisory?: boolean;
+  /** Overrides the rule's source, e.g. when a rule falls back from one tool to another. */
+  source?: FindingSource;
 }
 
 /** What the report contains. */

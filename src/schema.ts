@@ -45,6 +45,7 @@ export const RawFindingSchema = z.object({
   severity: SeveritySchema.optional(),
   confidence: ConfidenceSchema.optional(),
   advisory: z.boolean().optional(),
+  source: FindingSourceSchema.optional(),
 });
 
 export const FindingSchema = z.object({

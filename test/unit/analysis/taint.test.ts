@@ -63,6 +63,16 @@ describe('isUserInput: sources', () => {
   });
 });
 
+describe('isUserInput: trustSchemas option', () => {
+  it('keeps schema-validated values tainted when schemas are not trusted', () => {
+    const ctx = memoryContext({ [ROUTE]: handler('const { persona } = Schema.parse(await request.json())', 'sink(persona)') });
+    const call = ctx.getSourceFile(ROUTE).getDescendantsOfKind(SyntaxKind.CallExpression).find((c) => c.getExpression().getText() === 'sink')!;
+    const fn = entryFunctionOf(call);
+    expect(isUserInput(call.getArguments()[0]!, fn)).toBe(false);
+    expect(isUserInput(call.getArguments()[0]!, fn, { trustSchemas: false })).toBe(true);
+  });
+});
+
 describe('isUserInput: not user input', () => {
   it.each([
     ['zod parse output', handler('const parsed = Schema.parse(await request.json())', 'sink(parsed)')],

@@ -7,6 +7,8 @@ import { isSchemaValidationCall } from '../analysis/sanitizers.js';
 
 const BODY_READERS = new Set(['json', 'formData', 'text']);
 const REQUEST_NAME = /^(?:req|request)$/i;
+/** Webhook payloads are authenticated by signature, not schema; INTEG-001 checks that. */
+const WEBHOOK_PATH = /(?:^|\/)webhooks?(?:\/|$)/i;
 
 function bodyReads(fn: FunctionNode): CallExpression[] {
   const [first] = fn.getParameters();
@@ -64,6 +66,7 @@ export const input010: Rule = {
       const fn = entry.fn;
       if (!fn || calls(fn).some(isSchemaValidationCall)) continue;
       if (entry.kind === 'route') {
+        if (WEBHOOK_PATH.test(entry.routePath ?? '')) continue;
         const reads = bodyReads(fn).filter((read) => !(calleeName(read) === 'formData' && onlyFileFields(read, fn)));
         if (reads[0]) findings.push(findingAt(reads[0]));
       } else if (fn.getParameters().length > 0) {

@@ -87,6 +87,11 @@ describe('normalizeFindings', () => {
     ]);
   });
 
+  it('lets a raw finding override the rule source', () => {
+    const { findings } = normalizeFindings([run(testRule({ source: 'tool:osv' }), [{ evidence: 'a', source: 'tool:npm-audit' }, { evidence: 'b' }])]);
+    expect(findings.map((f) => f.source).sort()).toEqual(['tool:npm-audit', 'tool:osv']);
+  });
+
   it('redacts and truncates evidence before fingerprinting', () => {
     const secret = ['sk', 'live', '51FakeKeyForTests0000000000'].join('_');
     const { findings } = normalizeFindings([run(testRule(), [{ file: 'a.ts', line: 1, evidence: `const k = '${secret}' ${'y'.repeat(300)}` }])]);

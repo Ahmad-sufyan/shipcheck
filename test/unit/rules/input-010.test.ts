@@ -32,6 +32,10 @@ describe('INPUT-010 No schema validation', () => {
     expect(await runRule(rule, { [ROUTE]: post('const body = JSON.parse(await request.text())') })).toHaveLength(1);
   });
 
+  it('leaves webhook routes to INTEG-001, which checks their signature', async () => {
+    expect(await runRule(rule, { 'app/api/webhooks/stripe/route.ts': post('const event = await request.json()') })).toEqual([]);
+  });
+
   it('ignores file-only form reads and handlers without a body', async () => {
     expect(await runRule(rule, { [ROUTE]: post('const form = await request.formData()', "const file = form.get('file')", 'if (!(file instanceof File)) return new Response(null, { status: 400 })') })).toEqual([]);
     expect(await runRule(rule, { [ROUTE]: post('return Response.json({ ok: true })') })).toEqual([]);

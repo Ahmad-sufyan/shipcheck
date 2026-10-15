@@ -53,14 +53,18 @@ const PROPAGATING_METHODS = new Set([
 /** Global functions that pass their (first) argument's data through. */
 const PROPAGATING_FUNCTIONS = new Set(['String', 'decodeURIComponent', 'decodeURI', 'structuredClone', 'JSON.parse', 'Object.entries', 'Object.keys', 'Object.values', 'Object.fromEntries']);
 const PROPAGATING_CONSTRUCTORS = new Set(['URL', 'URLSearchParams', 'String']);
+const SCHEMA_PARSERS = new Set(['parse', 'safeParse', 'parseAsync', 'safeParseAsync', 'validate', 'validateSync']);
 
 export interface TaintOptions {
   /** Treat values checked with a regex .test() as validated (default true). */
   regexSanitizes?: boolean;
+  /** Treat schema.parse()/safeParse() output as sanitized (default true). Validated text is still attacker-chosen text. */
+  trustSchemas?: boolean;
 }
 
 interface State {
   regexSanitizes: boolean;
+  trustSchemas: boolean;
   fn: FunctionNode | undefined;
   kind: EntryKind | undefined;
   hops: number;
@@ -88,7 +92,7 @@ export function entryKind(fn: FunctionNode | undefined): EntryKind | undefined {
  * safeParse().data and other helper results count as sanitized.
  */
 export function isUserInput(node: Node, fn: FunctionNode | undefined, options: TaintOptions = {}): boolean {
-  return tainted(node, { fn, kind: entryKind(fn), hops: 0, seen: new Set(), regexSanitizes: options.regexSanitizes ?? true });
+  return tainted(node, { fn, kind: entryKind(fn), hops: 0, seen: new Set(), regexSanitizes: options.regexSanitizes ?? true, trustSchemas: options.trustSchemas ?? true });
 }
 
 function unwrap(input: Node): Node {
@@ -197,6 +201,7 @@ function callPropagates(call: Node, s: State): boolean {
   const text = calleeText(call);
   if (PROPAGATING_FUNCTIONS.has(text)) return args[0] !== undefined && tainted(args[0], s);
   if (text === 'Object.assign') return args.some((arg) => tainted(arg, s));
+  if (!s.trustSchemas && SCHEMA_PARSERS.has(calleeName(call))) return args.some((arg) => tainted(arg, s));
   const receiver = receiverOf(call);
   return receiver !== undefined && PROPAGATING_METHODS.has(calleeName(call)) && tainted(receiver, s);
 }
