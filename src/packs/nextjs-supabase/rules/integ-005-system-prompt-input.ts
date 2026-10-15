@@ -12,7 +12,7 @@ export const integ005: Rule = {
   advisory: true,
   stacks: ['nextjs-app-router'],
   description:
-    "Reports { role: 'system', content } messages and `system:` parameters (AI SDK, Anthropic) whose value is built from " +
+    "Reports { role: 'system', content } messages and `system:` / `instructions:` parameters (Anthropic, AI SDK 7) whose value is built from " +
     'request input in a route handler or server action. Schema-validated strings still count as input here, because a ' +
     'valid string can still carry instructions. Advisory: values constrained to an enum or allowlist are fine.',
   explanation:
@@ -24,10 +24,12 @@ export const integ005: Rule = {
   references: ['https://genai.owasp.org/llmrisk/llm01-prompt-injection/'],
   run(ctx) {
     const findings: RawFinding[] = [];
-    for (const file of sourceFiles(ctx, (text) => text.includes('system'))) {
+    for (const file of sourceFiles(ctx, (text) => text.includes('system') || text.includes('instructions'))) {
       for (const object of ctx.getSourceFile(file).getDescendantsOfKind(SyntaxKind.ObjectLiteralExpression)) {
         const role = stringLiteral(objectProperty(object, 'role'));
-        const value = role === 'system' ? objectProperty(object, 'content') : role === undefined ? objectProperty(object, 'system') : undefined;
+        // AI SDK 7 renamed `system` to `instructions`; Anthropic still uses `system`.
+        const value =
+          role === 'system' ? objectProperty(object, 'content') : role === undefined ? (objectProperty(object, 'system') ?? objectProperty(object, 'instructions')) : undefined;
         if (value && isUserInput(value, entryFunctionOf(value), { trustSchemas: false })) findings.push(findingAt(value));
       }
     }

@@ -5,6 +5,8 @@ import { calleeName, calls, findingAt, outermostFunction, sourceFiles, stringLit
 const SPOOFABLE = /^(?:x-forwarded-for|x-real-ip|true-client-ip|forwarded)$/i;
 const LIMITER_NAME = /rate[-_]?limit|limiter|throttl/i;
 const LIMITER_METHODS = new Set(['limit', 'consume', 'check', 'hit', 'take']);
+const VERCEL_NOTE =
+  'Vercel overwrites X-Forwarded-For and X-Real-IP with the real client address, so this limiter is only fooled when the app runs somewhere else (another host, a proxy in front, local development). Using ipAddress() or CF-Connecting-IP keeps it correct everywhere.';
 
 function functionName(fn: Node): string {
   if (Node.isFunctionDeclaration(fn) || Node.isFunctionExpression(fn) || Node.isMethodDeclaration(fn)) return fn.getName() ?? '';
@@ -47,7 +49,9 @@ export const rate004: Rule = {
       for (const call of calls(ctx.getSourceFile(file))) {
         if (calleeName(call) !== 'get' || !SPOOFABLE.test(stringLiteral(call.getArguments()[0]) ?? '')) continue;
         const fn = outermostFunction(call);
-        if (fn && rateLimits(fn)) findings.push(findingAt(call));
+        if (!fn || !rateLimits(fn)) continue;
+        // Vercel overwrites X-Forwarded-For and X-Real-IP with the client address, so the header is only spoofable elsewhere.
+        findings.push(findingAt(call, ctx.stacks.has('vercel') ? { confidence: 'low', explanation: VERCEL_NOTE } : {}));
       }
     }
     return findings;

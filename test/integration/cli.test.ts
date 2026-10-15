@@ -1,14 +1,20 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { defaultRegistry } from '../../src/packs/index.js';
 import { ScanResultSchema } from '../../src/schema.js';
 import { shipcheck } from '../helpers/cli.js';
 import { tmpProject } from '../helpers/context.js';
 
 const ANSI = /\x1b\[[0-9;]*m/;
 
+/** Turns off every rule except `ids`, so later rules do not change what these CLI tests see. */
+const only = (ids: string[], extra: Record<string, string> = {}) =>
+  JSON.stringify({ rules: { ...Object.fromEntries(defaultRegistry().all().filter((r) => !ids.includes(r.id)).map((r) => [r.id, 'off'])), ...extra } });
+
 /** One low (HTTP-006) and one medium (SECRET-006) finding. */
 const leaky = {
+  'shipcheck.config.json': only(['SECRET-006', 'HTTP-006']),
   'package.json': JSON.stringify({ dependencies: { next: '16.4.1' } }),
   'app/page.tsx': 'export default function Page() { return null }',
   'next.config.mjs': 'const nextConfig = {\n  productionBrowserSourceMaps: true,\n}\nexport default nextConfig\n',
@@ -77,7 +83,7 @@ describe.concurrent('shipcheck CLI', () => {
   });
 
   it('uses --config', async () => {
-    const root = tmpProject({ ...leaky, 'strict.json': '{"rules":{"HTTP-006":"critical"}}' });
+    const root = tmpProject({ ...leaky, 'strict.json': only(['SECRET-006', 'HTTP-006'], { 'HTTP-006': 'critical' }) });
     const { exitCode, stdout } = await shipcheck(['scan', root, '--config', join(root, 'strict.json'), '--format', 'json']);
     expect(exitCode).toBe(1);
     expect(JSON.parse(stdout).findings[0]).toMatchObject({ ruleId: 'HTTP-006', severity: 'critical' });

@@ -13,6 +13,11 @@ describe('RATE-004 Limiter keyed on a spoofable header', () => {
     expect(await runRule(rule, { 'app/api/reset/route.ts': text })).toEqual([expect.objectContaining({ line: 2 })]);
   });
 
+  it('lowers confidence on Vercel, which overwrites forwarded headers', async () => {
+    const text = code('export function checkRateLimit(request: Request) {', "  return hits(request.headers.get('x-forwarded-for'))", '}');
+    expect(await runRule(rule, { 'lib/rate-limit.ts': text, 'vercel.json': '{}' })).toEqual([expect.objectContaining({ confidence: 'low' })]);
+  });
+
   it('ignores the platform IP helper', async () => {
     const text = code("import { ipAddress } from '@vercel/functions'", 'export async function POST(request: Request) {', '  if (!(await rateLimit(ipAddress(request) ?? "anon"))) return new Response(null, { status: 429 })', '}');
     expect(await runRule(rule, { 'app/api/reset/route.ts': text })).toEqual([]);

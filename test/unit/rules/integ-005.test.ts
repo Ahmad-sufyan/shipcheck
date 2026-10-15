@@ -15,6 +15,10 @@ describe('INTEG-005 User input in system prompt', () => {
     expect(await runRule(rule, { [ROUTE]: post("const result = streamText({ model, system: 'You help ' + persona, prompt: message })") })).toHaveLength(1);
   });
 
+  it('reports AI SDK 7 instructions built from input', async () => {
+    expect(await runRule(rule, { [ROUTE]: post('const result = await generateText({ model, instructions: `Act as ${persona}`, prompt: message })') })).toHaveLength(1);
+  });
+
   it('ignores constant system prompts with user text in user messages', async () => {
     const text = post("await anthropic.messages.create({ model: 'm', max_tokens: 100, system: 'You are a billing assistant.', messages: [{ role: 'user', content: message }] })");
     expect(await runRule(rule, { [ROUTE]: text })).toEqual([]);
