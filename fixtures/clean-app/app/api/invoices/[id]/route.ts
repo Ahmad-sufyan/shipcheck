@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: invoice } = await supabase.from('invoices').select('*').eq('id', id).eq('user_id', user.id).single()
+  const { data: invoice } = await supabase.from('invoices').select('id, amount_cents, status, created_at').eq('id', id).eq('user_id', user.id).single()
   if (!invoice) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }

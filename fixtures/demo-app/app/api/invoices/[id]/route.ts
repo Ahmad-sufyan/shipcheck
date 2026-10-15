@@ -16,5 +16,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!invoice) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
+  // shipcheck-expect: DATA-002
   return NextResponse.json(invoice)
 }
