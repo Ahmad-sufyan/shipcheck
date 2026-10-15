@@ -82,6 +82,18 @@ describe.concurrent('shipcheck CLI', () => {
     expect(ScanResultSchema.parse(JSON.parse(readFileSync(out, 'utf8'))).findings).toHaveLength(2);
   });
 
+  it('skips network lookups with --offline and lists the flag in help', async () => {
+    const root = tmpProject({
+      'package.json': JSON.stringify({ name: 'x', private: true, dependencies: { next: '16.4.1' } }),
+      'package-lock.json': JSON.stringify({ name: 'x', lockfileVersion: 3, packages: { '': {}, 'node_modules/next': { version: '16.4.1' } } }),
+      'shipcheck.config.json': only(['DEP-001']),
+    });
+    const { exitCode, stdout } = await shipcheck(['scan', root, '--offline', '--format', 'json']);
+    expect(exitCode).toBe(0);
+    expect(JSON.parse(stdout).skipped).toContainEqual({ check: 'DEP-001', reason: expect.stringContaining('--offline') });
+    expect((await shipcheck(['scan', '--help'])).stdout).toContain('--offline');
+  });
+
   it('uses --config', async () => {
     const root = tmpProject({ ...leaky, 'strict.json': only(['SECRET-006', 'HTTP-006'], { 'HTTP-006': 'critical' }) });
     const { exitCode, stdout } = await shipcheck(['scan', root, '--config', join(root, 'strict.json'), '--format', 'json']);
