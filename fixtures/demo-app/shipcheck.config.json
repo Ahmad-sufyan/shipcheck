@@ -1,0 +1,3 @@
+{
+  "publicPaths": ["/api/signup", "/api/contact", "/api/newsletter"]
+}

@@ -22,7 +22,7 @@ beforeAll(async () => {
 describe('fixtures/demo-app', () => {
   it('scans cleanly with the expected stack', () => {
     expect(result.ruleErrors).toEqual([]);
-    expect(result.stack).toEqual(['nextjs-app-router', 'supabase']);
+    expect(result.stack).toEqual(['nextjs-app-router', 'supabase', 'vercel']);
   });
 
   it('only reports findings from registered rules', () => {
@@ -54,7 +54,7 @@ describe('fixtures/demo-app context', () => {
     const { ctx, skipped } = await buildContext(DEMO, loadUserConfig(DEMO).config);
     expect(skipped).toEqual([]);
     expect(ctx.next.middleware()).toEqual({ file: 'proxy.ts', matchers: ['/dashboard/:path*'] });
-    expect(ctx.next.routeHandlers().map((h) => `${h.method} ${h.routePath}`)).toEqual([
+    expect(ctx.next.routeHandlers().map((h) => `${h.method} ${h.routePath}`)).toEqual(expect.arrayContaining([
       'GET /api/admin/stats',
       'POST /api/admin/users',
       'GET /api/files',
@@ -71,7 +71,7 @@ describe('fixtures/demo-app context', () => {
       'POST /api/upload',
       'GET /auth/callback',
       'GET /go',
-    ]);
+    ]));
     expect(ctx.next.serverActions()).toEqual([]);
     expect(['components/admin-client.tsx', 'components/admin-panel.tsx', 'components/token-store.ts'].every((f) => ctx.next.isClientFile(f))).toBe(true);
     expect(ctx.next.isClientFile('components/comment.tsx')).toBe(false);

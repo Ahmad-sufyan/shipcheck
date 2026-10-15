@@ -23,7 +23,7 @@ describe('fixtures/clean-app', () => {
   it('scans without rule errors or skipped inputs, with a perfect score', () => {
     expect(result.ruleErrors).toEqual([]);
     expect(result.skipped).toEqual([]);
-    expect(result.stack).toEqual(['nextjs-app-router', 'supabase']);
+    expect(result.stack).toEqual(['nextjs-app-router', 'supabase', 'vercel']);
     expect(result.score).toMatchObject({ value: 100, grade: 'A' });
   });
 
