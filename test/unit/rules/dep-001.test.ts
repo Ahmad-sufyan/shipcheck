@@ -21,6 +21,7 @@ describe('DEP-001 Known vulnerable dependency', () => {
     const { findings, skipped } = await run(() => ({ exitCode: 1, stdout: recorded('osv-scanner.json') }));
     expect(skipped).toEqual([]);
     expect(findings).toEqual([
+      expect.objectContaining({ line: lineOf(LOCK, '"node_modules/esbuild"'), severity: 'low', explanation: expect.stringContaining('development dependency') }),
       {
         file: 'package-lock.json',
         line: lineOf(LOCK, '"node_modules/next"'),
@@ -30,7 +31,6 @@ describe('DEP-001 Known vulnerable dependency', () => {
         fix: 'Upgrade next to 15.2.3 or later (https://github.com/advisories/GHSA-f82v-jwr5-mffw).',
         source: 'tool:osv',
       },
-      expect.objectContaining({ line: lineOf(LOCK, '"node_modules/esbuild"'), severity: 'low', explanation: expect.stringContaining('development dependency') }),
     ]);
   });
 

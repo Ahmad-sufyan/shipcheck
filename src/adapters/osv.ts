@@ -81,6 +81,8 @@ export function parseOsvReport(report: unknown): Vulnerability[] | undefined {
         if (Number.isFinite(cvss)) vulnerability.cvss = cvss;
         const severity = SEVERITY_ORDER.find((s) => severities.includes(s));
         if (severity) vulnerability.severity = severity;
+        // Only set for dev and optional packages (["dev"], ["optional"], ["dev", "optional"]); osv-scanner
+        // omits the field otherwise, so `dev` stays undefined and DEP-001 asks the lockfile instead.
         const depGroups = strings(entry.dependency_groups);
         if (Array.isArray(entry.dependency_groups)) vulnerability.dev = depGroups.length > 0 && depGroups.every((g) => g === 'dev');
         found.push(vulnerability);

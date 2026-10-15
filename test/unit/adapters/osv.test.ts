@@ -17,6 +17,7 @@ describe('osv-scanner adapter', () => {
     expect(await runOsvScanner(ROOT, 'package-lock.json', toolContext(exec))).toEqual({
       ok: true,
       value: [
+        expect.objectContaining({ package: 'esbuild', version: '0.24.2', cvss: 5.3, severity: 'moderate', fixedVersions: ['0.25.0'], dev: true }),
         {
           package: 'next',
           version: '15.1.0',
@@ -26,12 +27,19 @@ describe('osv-scanner adapter', () => {
           severity: 'critical',
           url: 'https://github.com/advisories/GHSA-f82v-jwr5-mffw',
           fixedVersions: ['13.5.9', '14.2.25', '15.2.3', '12.3.5'],
-          dev: false,
           tool: 'osv-scanner',
         },
-        expect.objectContaining({ package: 'esbuild', version: '0.24.2', cvss: 5.3, severity: 'moderate', fixedVersions: ['0.25.0'], dev: true }),
       ],
     });
+  });
+
+  it('leaves dev unknown when osv-scanner reports no dependency groups (production packages)', () => {
+    const report = { results: [{ packages: [{ package: { name: 'a', version: '1.0.0', ecosystem: 'npm' }, groups: [{ ids: ['GHSA-1'], aliases: [], max_severity: '' }], vulnerabilities: [{ id: 'GHSA-1' }] }] }] };
+    const withGroups = (dependency_groups: string[]) => ({ results: [{ packages: [{ ...report.results[0]!.packages[0]!, dependency_groups }] }] });
+    expect(parseOsvReport(report)?.[0]?.dev).toBeUndefined();
+    expect(parseOsvReport(withGroups(['dev']))?.[0]?.dev).toBe(true);
+    expect(parseOsvReport(withGroups(['dev', 'optional']))?.[0]?.dev).toBe(false);
+    expect(parseOsvReport(withGroups(['optional']))?.[0]?.dev).toBe(false);
   });
 
   it('treats exit code 128 (no packages found) as an empty result', async () => {
@@ -39,9 +47,10 @@ describe('osv-scanner adapter', () => {
     expect(await runOsvScanner(ROOT, 'package-lock.json', toolContext(exec))).toEqual({ ok: true, value: [] });
   });
 
-  it('skips on errors, even with JSON output', async () => {
-    const { exec } = fakeExec(() => ({ exitCode: 129, stdout: '{"results":[]}' }));
-    expect(await runOsvScanner(ROOT, 'package-lock.json', toolContext(exec))).toEqual({ ok: false, reason: 'osv-scanner failed (exit code 129)' });
+  it('skips on errors, even with JSON output (exit code 127 when osv.dev cannot be reached)', async () => {
+    const stderr = 'Starting filesystem walk for root: /\nError during extraction: (extracting as vulnmatch/osvdev) max retries exceeded\n';
+    const { exec } = fakeExec(() => ({ exitCode: 127, stdout: '{\n  "results": []\n}\n', stderr }));
+    expect(await runOsvScanner(ROOT, 'package-lock.json', toolContext(exec))).toEqual({ ok: false, reason: 'osv-scanner failed (exit code 127)' });
   });
 
   it('skips with an install hint when the binary is missing, and on timeouts', async () => {
