@@ -67,3 +67,17 @@ export function matchesGlob(path: string, glob: string): boolean {
   }
   return regex.test(path);
 }
+
+/** Regex matching concrete URLs for an App Router route path: `/api/users/[id]` matches `/api/users/42`. */
+export function routeRegex(routePath: string): RegExp {
+  const source = routePath
+    .split('/')
+    .map((segment) => {
+      if (/^\[\[\.\.\..+\]\]$/.test(segment)) return '(?:/.*)?';
+      if (/^\[\.\.\..+\]$/.test(segment)) return '/.+';
+      if (/^\[.+\]$/.test(segment)) return '/[^/]+';
+      return segment ? `/${segment.replace(/[.+*?^${}()|[\]\\]/g, '\\$&')}` : '';
+    })
+    .join('');
+  return new RegExp(`^${source || '/'}$`);
+}
