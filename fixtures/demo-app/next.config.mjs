@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-// shipcheck-expect: HTTP-006
+// shipcheck-expect: HTTP-006, HTTP-001, HTTP-002
 const nextConfig = {
   reactStrictMode: true,
   images: {

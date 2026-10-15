@@ -1,6 +1,6 @@
 import { Node, SyntaxKind } from 'ts-morph';
 import { unwrapExpression } from '../../../context/ast.js';
-import { fileSetOf } from '../../../context/files.js';
+import { fileSetOf, lineAt } from '../../../context/files.js';
 import type { ScanContext } from '../../../types.js';
 import { calleeName, isFunctionNode, objectProperty, receiverOf, resolveExpression, staticText } from './ast-utils.js';
 import { middlewareFunction } from './auth-check.js';
@@ -113,4 +113,13 @@ export function headerValues(ctx: ScanContext, key: string): (string | undefined
   return collectHeaders(ctx)
     .filter((h) => h.key === key)
     .map((h) => h.value);
+}
+
+/** Where to report a header that is missing everywhere: the next.config object, else the middleware file, else project level. */
+export function headersAnchor(ctx: ScanContext): { file?: string; line?: number; evidence: string } {
+  const config = ctx.nextConfig;
+  if (config) return { file: config.file, line: config.objectLine, evidence: lineAt(ctx.readText(config.file), config.objectLine).trim() };
+  const middleware = ctx.next.middleware();
+  if (middleware) return { file: middleware.file, line: 1, evidence: lineAt(ctx.readText(middleware.file), 1).trim() };
+  return { evidence: 'No security headers configured in next.config, middleware, vercel.json or public/_headers' };
 }
