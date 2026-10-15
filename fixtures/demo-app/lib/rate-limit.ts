@@ -1,3 +1,4 @@
+// shipcheck-expect: RATE-003
 const hits = new Map<string, { count: number; resetAt: number }>()
 
 /** Fixed-window limiter keyed by caller; returns false once `limit` requests arrive within `windowMs`. */
