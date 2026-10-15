@@ -96,7 +96,7 @@ describe.concurrent('shipcheck CLI', () => {
   });
 
   it('reports HTTP-006 and SECRET-006 for fixtures/demo-app as schema-valid JSON', async () => {
-    const { exitCode, stdout } = await shipcheck(['scan', 'fixtures/demo-app', '--format', 'json', '--fail-on', 'none']);
+    const { exitCode, stdout } = await shipcheck(['scan', 'fixtures/demo-app', '--offline', '--format', 'json', '--fail-on', 'none']);
     expect(exitCode).toBe(0);
     const result = ScanResultSchema.parse(JSON.parse(stdout));
     expect(result.target.path).toBe('fixtures/demo-app');
@@ -104,12 +104,12 @@ describe.concurrent('shipcheck CLI', () => {
   });
 
   it('exits 0 for fixtures/clean-app with --fail-on low and 1 for fixtures/demo-app with --fail-on medium', async () => {
-    expect((await shipcheck(['scan', 'fixtures/clean-app', '--fail-on', 'low'])).exitCode).toBe(0);
-    expect((await shipcheck(['scan', 'fixtures/demo-app', '--fail-on', 'medium'])).exitCode).toBe(1);
+    expect((await shipcheck(['scan', 'fixtures/clean-app', '--offline', '--fail-on', 'low'])).exitCode).toBe(0);
+    expect((await shipcheck(['scan', 'fixtures/demo-app', '--offline', '--fail-on', 'medium'])).exitCode).toBe(1);
   });
 
   it('produces identical JSON for repeated scans apart from durationMs', async () => {
-    const [a, b] = await Promise.all([1, 2].map(() => shipcheck(['scan', 'fixtures/demo-app', '--format', 'json'])));
+    const [a, b] = await Promise.all([1, 2].map(() => shipcheck(['scan', 'fixtures/demo-app', '--offline', '--format', 'json'])));
     const strip = (stdout: string) => ({ ...JSON.parse(stdout), durationMs: 0 });
     expect(strip(a!.stdout)).toEqual(strip(b!.stdout));
   });

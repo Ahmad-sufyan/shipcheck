@@ -21,10 +21,11 @@ interface ScanFlags {
   failOn: Severity | 'none';
   minSeverity: Severity;
   config?: string;
+  offline?: boolean;
 }
 
 async function runScan(path: string, flags: ScanFlags): Promise<number> {
-  const result = await scan(path, flags.config === undefined ? {} : { configFile: flags.config });
+  const result = await scan(path, { ...(flags.config === undefined ? {} : { configFile: flags.config }), offline: flags.offline === true });
   const shown = filterFindings(result, flags.minSeverity);
 
   let report: string;
@@ -68,6 +69,7 @@ async function main(argv: string[]): Promise<number> {
         .default('info'),
     )
     .option('-c, --config <file>', 'path to a shipcheck.config.json (default: <path>/shipcheck.config.json)')
+    .option('--offline', 'skip checks that need the network (vulnerability database lookups for DEP-001)')
     .action(async (path: string, flags: ScanFlags) => {
       exitCode = await runScan(path, flags);
     });

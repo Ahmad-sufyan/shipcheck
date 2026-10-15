@@ -5,6 +5,7 @@ import { loadUserConfig } from '../../src/context/user-config.js';
 import { scan } from '../../src/core/scan.js';
 import { defaultRegistry } from '../../src/packs/index.js';
 import type { Finding, ScanResult } from '../../src/types.js';
+import { gitOnlyExec } from '../helpers/fake-exec.js';
 import { checkRuleAgainstExpectations, collectMarkers, expectedRuleIds, type Marker } from '../helpers/markers.js';
 
 const DEMO = fileURLToPath(new URL('../../fixtures/demo-app', import.meta.url));
@@ -16,7 +17,7 @@ const showFinding = (f: Finding) => `${f.ruleId} ${f.file ?? f.url ?? '(project)
 
 let result: ScanResult;
 beforeAll(async () => {
-  result = await scan(DEMO);
+  result = await scan(DEMO, { offline: true, exec: gitOnlyExec });
 });
 
 describe('fixtures/demo-app', () => {

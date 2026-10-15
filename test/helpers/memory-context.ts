@@ -1,16 +1,16 @@
-import { createContext } from '../../src/context/build-context.js';
+import { createContext, type ContextOptions } from '../../src/context/build-context.js';
 import { createMemorySource } from '../../src/context/files.js';
 import { ShipcheckConfigSchema } from '../../src/schema.js';
 import type { RawFinding, Rule, ScanContext, ShipcheckConfig } from '../../src/types.js';
 
 /** A full ScanContext built from an in-memory file map; nothing touches the disk. */
-export function memoryContext(files: Record<string, string>, config: Partial<ShipcheckConfig> = {}): ScanContext {
-  return createContext(createMemorySource(files), ShipcheckConfigSchema.parse(config)).ctx;
+export function memoryContext(files: Record<string, string>, config: Partial<ShipcheckConfig> = {}, options: ContextOptions = {}): ScanContext {
+  return createContext(createMemorySource(files), ShipcheckConfigSchema.parse(config), options).ctx;
 }
 
 /** Runs one rule against an in-memory project and returns its raw findings. */
-export async function runRule(rule: Rule, files: Record<string, string>, config: Partial<ShipcheckConfig> = {}): Promise<RawFinding[]> {
-  return await rule.run(memoryContext(files, config));
+export async function runRule(rule: Rule, files: Record<string, string>, config: Partial<ShipcheckConfig> = {}, options: ContextOptions = {}): Promise<RawFinding[]> {
+  return await rule.run(memoryContext(files, config, options));
 }
 
 /** Shorthand for asserting locations: `file:line` for each finding. */

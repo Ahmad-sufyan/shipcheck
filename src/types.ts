@@ -151,6 +151,8 @@ export interface ScanContext {
   /** Populated from wrangler.toml, or from wrangler.jsonc / wrangler.json when no TOML file exists. */
   wranglerToml: { file: string; data: unknown } | null;
   gitignore: { file: string; patterns: string[] } | null;
+  /** Browser bundles from a local `next build` (every .js file under .next/static); the regular file list ignores .next. */
+  nextStaticFiles: readonly string[];
   next: {
     routeHandlers(): RouteHandler[];
     serverActions(): ServerAction[];

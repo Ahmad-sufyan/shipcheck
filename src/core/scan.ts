@@ -1,7 +1,9 @@
 import { statSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import pkg from '../../package.json' with { type: 'json' };
+import { defaultExec, type ExecFn } from '../adapters/exec.js';
 import { buildContext } from '../context/build-context.js';
+import { compareStrings } from '../context/files.js';
 import { loadUserConfig } from '../context/user-config.js';
 import { defaultRegistry } from '../packs/index.js';
 import { severityRank } from '../schema.js';
@@ -18,8 +20,12 @@ export interface ScanOptions {
   configFile?: string;
   /** Rules to run; defaults to every registered pack rule. */
   rules?: readonly Rule[];
-  /** Per-rule timeout; defaults to 10 s. */
+  /** Per-rule timeout; defaults to 10 s (tool-backed rules get the 120 s tool timeout). */
   timeoutMs?: number;
+  /** Skip checks that need the network (DEP-001 vulnerability database lookups). */
+  offline?: boolean;
+  /** How external tools are run; injected by tests to replay recorded output. */
+  exec?: ExecFn;
 }
 
 /** The target as shown in reports: relative to the working directory when inside it, so reports carry no home paths. */
@@ -52,7 +58,7 @@ export async function scan(target: string, options: ScanOptions = {}): Promise<S
   if (!stat.isDirectory()) throw new ShipcheckError(`Not a directory: ${target}`);
 
   const { config } = loadUserConfig(root, options.configFile);
-  const { ctx, skipped } = await buildContext(root, config);
+  const { ctx, skipped } = await buildContext(root, config, { tools: { exec: options.exec ?? defaultExec, offline: options.offline ?? false } });
   const rules = options.rules ?? defaultRegistry().all();
   const outcome = await runRules(rules, ctx, options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs });
   const normalized = normalizeFindings(outcome.runs, { readText: ctx.readText });
@@ -65,7 +71,8 @@ export async function scan(target: string, options: ScanOptions = {}): Promise<S
     score: computeScore(normalized.findings),
     findings: normalized.findings,
     suppressedCount: normalized.suppressedCount,
-    skipped: [...skipped, ...outcome.skipped],
+    // Rules report skips while running concurrently; sort so reports stay deterministic.
+    skipped: [...skipped, ...outcome.skipped].sort((a, b) => compareStrings(a.check, b.check) || compareStrings(a.reason, b.reason)),
     ruleErrors: [...outcome.ruleErrors, ...normalized.ruleErrors],
     durationMs: Math.round(performance.now() - started),
   };

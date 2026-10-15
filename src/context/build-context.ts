@@ -1,3 +1,4 @@
+import fg from 'fast-glob';
 import { detectStacks } from '../stacks/detect.js';
 import { isClientFile } from '../stacks/nextjs/client-boundary.js';
 import { findMiddleware } from '../stacks/nextjs/middleware.js';
@@ -40,11 +41,17 @@ function once<T>(compute: () => T): () => T {
 /** Lists files under `root` (honouring ignores) and builds the scan context from disk. */
 export interface ContextOptions {
   tools?: ToolContext;
+  /** Defaults to the .next/static scripts in the source's own file list (memory sources). */
+  nextStaticFiles?: readonly string[];
 }
+
+const NEXT_STATIC_SCRIPT = /^\.next\/static\/.+\.js$/;
 
 export async function buildContext(root: string, config: ShipcheckConfig, options: ContextOptions = {}): Promise<BuiltContext> {
   const files = await listFiles(root, config.ignorePaths);
-  return createContext(createDiskSource(root, files), config, options);
+  // .next is ignored for every other rule; SECRET-005 still checks the client bundles of a local build.
+  const nextStaticFiles = (await fg('.next/static/**/*.js', { cwd: root, dot: true, onlyFiles: true, followSymbolicLinks: false, suppressErrors: true })).sort();
+  return createContext(createDiskSource(root, files), config, { nextStaticFiles, ...options });
 }
 
 export function createContext(source: ProjectSource, config: ShipcheckConfig, options: ContextOptions = {}): BuiltContext {
@@ -69,6 +76,7 @@ export function createContext(source: ProjectSource, config: ShipcheckConfig, op
     vercelJson: readVercelJson(source, skipped),
     wranglerToml: readWranglerConfig(source, skipped),
     gitignore: readGitignore(source),
+    nextStaticFiles: options.nextStaticFiles ?? source.files.filter((file) => NEXT_STATIC_SCRIPT.test(file)),
     next: {
       routeHandlers: once(() => findRouteHandlers(nextSource)),
       serverActions: once(() => findServerActions(nextSource)),
