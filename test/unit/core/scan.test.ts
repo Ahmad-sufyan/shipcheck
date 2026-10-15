@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ShipcheckError } from '../../../src/core/errors.js';
-import { scan, VERSION } from '../../../src/core/scan.js';
+import { filterFindings, hasBlockingFindings, scan, VERSION } from '../../../src/core/scan.js';
 import { ScanResultSchema } from '../../../src/schema.js';
 import { tmpProject } from '../../helpers/context.js';
+import { makeFinding, makeResult } from '../../helpers/results.js';
 import { testRule } from '../../helpers/rules.js';
 
 const project = {
@@ -53,6 +54,22 @@ describe('scan', () => {
     expect((await scan(root, { rules })).findings).toEqual([]);
     const explicit = await scan(root, { rules, configFile: join(root, 'other.json') });
     expect(explicit.findings.map((f) => f.severity)).toEqual(['info']);
+  });
+
+  it('filters displayed findings by minimum severity without touching the score', () => {
+    const result = makeResult([makeFinding({ severity: 'high' }), makeFinding({ severity: 'low', ruleId: 'HTTP-006' })]);
+    const filtered = filterFindings(result, 'medium');
+    expect(filtered.findings.map((f) => f.severity)).toEqual(['high']);
+    expect(filtered.score).toEqual(result.score);
+    expect(filterFindings(result, 'info')).toBe(result);
+  });
+
+  it('decides whether findings should fail the run', () => {
+    const result = makeResult([makeFinding({ severity: 'medium' }), makeFinding({ severity: 'critical', advisory: true, ruleId: 'X-001' })]);
+    expect(hasBlockingFindings(result, 'medium')).toBe(true);
+    expect(hasBlockingFindings(result, 'low')).toBe(true);
+    expect(hasBlockingFindings(result, 'high')).toBe(false);
+    expect(hasBlockingFindings(result, 'none')).toBe(false);
   });
 
   it('is deterministic apart from durationMs', async () => {

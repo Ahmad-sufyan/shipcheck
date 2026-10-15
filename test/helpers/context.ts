@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { afterEach } from 'vitest';
+import { afterAll } from 'vitest';
 import { createContext } from '../../src/context/build-context.js';
 import { createMemorySource } from '../../src/context/files.js';
 import { ShipcheckConfigSchema } from '../../src/schema.js';
@@ -14,11 +14,11 @@ export function memoryContext(files: Record<string, string>, config: Partial<Shi
 
 const created: string[] = [];
 
-afterEach(() => {
+afterAll(() => {
   while (created.length) rmSync(created.pop()!, { recursive: true, force: true });
 });
 
-/** Writes the file map to a fresh temp directory (removed after each test) and returns its path. */
+/** Writes the file map to a fresh temp directory (removed after the test file) and returns its path. */
 export function tmpProject(files: Record<string, string>): string {
   const root = mkdtempSync(join(tmpdir(), 'shipcheck-test-'));
   created.push(root);

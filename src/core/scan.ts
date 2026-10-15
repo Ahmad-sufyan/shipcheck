@@ -4,7 +4,8 @@ import pkg from '../../package.json' with { type: 'json' };
 import { buildContext } from '../context/build-context.js';
 import { loadUserConfig } from '../context/user-config.js';
 import { defaultRegistry } from '../packs/index.js';
-import type { Rule, ScanResult } from '../types.js';
+import { severityRank } from '../schema.js';
+import type { Rule, ScanResult, Severity } from '../types.js';
 import { ShipcheckError } from './errors.js';
 import { normalizeFindings } from './normalize.js';
 import { runRules } from './runner.js';
@@ -27,6 +28,20 @@ function displayPath(root: string): string {
   if (rel === '') return '.';
   if (rel.startsWith('..') || isAbsolute(rel)) return root.split(sep).join('/');
   return rel.split(sep).join('/');
+}
+
+/** Display filter: keeps findings at or above `minSeverity`. Score and counts are left untouched. */
+export function filterFindings(result: ScanResult, minSeverity: Severity): ScanResult {
+  if (minSeverity === 'info') return result;
+  const limit = severityRank(minSeverity);
+  return { ...result, findings: result.findings.filter((f) => severityRank(f.severity) <= limit) };
+}
+
+/** Whether any non-advisory finding is at or above `failOn` (the CLI then exits 1). */
+export function hasBlockingFindings(result: ScanResult, failOn: Severity | 'none'): boolean {
+  if (failOn === 'none') return false;
+  const limit = severityRank(failOn);
+  return result.findings.some((f) => !f.advisory && severityRank(f.severity) <= limit);
 }
 
 export async function scan(target: string, options: ScanOptions = {}): Promise<ScanResult> {
