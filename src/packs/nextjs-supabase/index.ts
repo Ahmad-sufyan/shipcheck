@@ -15,6 +15,7 @@ import { auth013 } from './rules/auth-013-logout-session.js';
 import { authz001 } from './rules/authz-001-handler-without-auth.js';
 import { authz002 } from './rules/authz-002-matcher-gap.js';
 import { authz003 } from './rules/authz-003-idor.js';
+import { authz004 } from './rules/authz-004-client-role-check.js';
 import { authz005 } from './rules/authz-005-rls-disabled.js';
 import { authz006 } from './rules/authz-006-permissive-policy.js';
 import { authz007 } from './rules/authz-007-service-role-client.js';
@@ -33,5 +34,5 @@ import { secret006SourceMaps } from './rules/secret-006-source-maps.js';
 export const nextjsSupabasePack: RulePack = {
   id: 'nextjs-supabase',
   title: 'Next.js App Router + Supabase',
-  rules: [auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth008, auth009, auth010, auth011, auth012, auth013, authz001, authz002, authz003, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
+  rules: [auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth008, auth009, auth010, auth011, auth012, auth013, authz001, authz002, authz003, authz004, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
 };
