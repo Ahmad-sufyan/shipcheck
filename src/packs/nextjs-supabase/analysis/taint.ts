@@ -54,7 +54,13 @@ const PROPAGATING_METHODS = new Set([
 const PROPAGATING_FUNCTIONS = new Set(['String', 'decodeURIComponent', 'decodeURI', 'structuredClone', 'JSON.parse', 'Object.entries', 'Object.keys', 'Object.values', 'Object.fromEntries']);
 const PROPAGATING_CONSTRUCTORS = new Set(['URL', 'URLSearchParams', 'String']);
 
+export interface TaintOptions {
+  /** Treat values checked with a regex .test() as validated (default true). */
+  regexSanitizes?: boolean;
+}
+
 interface State {
+  regexSanitizes: boolean;
   fn: FunctionNode | undefined;
   kind: EntryKind | undefined;
   hops: number;
@@ -81,8 +87,8 @@ export function entryKind(fn: FunctionNode | undefined): EntryKind | undefined {
  * Calls to anything but a few pass-through built-ins end the trail, so schema.parse() output,
  * safeParse().data and other helper results count as sanitized.
  */
-export function isUserInput(node: Node, fn: FunctionNode | undefined): boolean {
-  return tainted(node, { fn, kind: entryKind(fn), hops: 0, seen: new Set() });
+export function isUserInput(node: Node, fn: FunctionNode | undefined, options: TaintOptions = {}): boolean {
+  return tainted(node, { fn, kind: entryKind(fn), hops: 0, seen: new Set(), regexSanitizes: options.regexSanitizes ?? true });
 }
 
 function unwrap(input: Node): Node {
@@ -219,7 +225,7 @@ function identifierTainted(identifier: Node, s: State): boolean {
   if (!Node.isIdentifier(identifier) || !s.fn) return false;
   const declaration = declarationOf(identifier);
   if (!declaration || s.seen.has(declaration) || !within(declaration, s.fn)) return false;
-  if (regexTested(identifier.getText(), s.fn)) return false;
+  if (s.regexSanitizes && regexTested(identifier.getText(), s.fn)) return false;
 
   const index = parameterIndex(declaration, s.fn);
   if (index !== -1) return s.kind === 'action' || (s.kind === 'route' && index === 1);

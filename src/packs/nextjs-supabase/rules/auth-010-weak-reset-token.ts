@@ -1,19 +1,13 @@
 import { Node, SyntaxKind } from 'ts-morph';
 import type { RawFinding, Rule } from '../../../types.js';
 import { calleeName, calleeText, calls, findingAt, importBindings, importedCallName, numericValue } from '../analysis/ast-utils.js';
-import { entries, type Entry } from '../analysis/entries.js';
+import { entries } from '../analysis/entries.js';
+import { isResetEntry } from '../analysis/flows.js';
 
-const RESET_PATH = /reset|forgot|recover/i;
-const RESET_TEXT = /password[_-]?resets?|reset[_-]?password|forgot[_-]?password/i;
 const TOKEN_NAME = /token|code|otp|secret|key/i;
 const NOT_TOKEN_NAME = /expir|ttl|until/i;
 const LIFECYCLE = /expir|ttl|valid_?until|used_?at|consumed|single[_-]?use|\bdelete\b|\.delete\(/i;
 const MIN_BYTES = 16;
-
-function isResetHandler(entry: Entry): boolean {
-  const text = entry.node.getText();
-  return (entry.kind === 'route' && RESET_PATH.test(entry.routePath ?? '')) || RESET_TEXT.test(text) || RESET_PATH.test(entry.name);
-}
 
 /** Why an expression is a weak token source, if it is one. */
 function weakSource(expression: Node, uuidV1: (call: Node) => boolean): boolean {
@@ -51,7 +45,7 @@ export const auth010: Rule = {
   run(ctx) {
     const findings: RawFinding[] = [];
     for (const entry of entries(ctx)) {
-      if (!isResetHandler(entry) || calls(entry.node).some((call) => calleeName(call) === 'resetPasswordForEmail')) continue;
+      if (!isResetEntry(entry) || calls(entry.node).some((call) => calleeName(call) === 'resetPasswordForEmail')) continue;
       const uuid = importBindings(entry.node.getSourceFile(), ['uuid']);
       const uuidV1 = (call: Node) => Node.isCallExpression(call) && importedCallName(call, uuid) === 'v1';
 

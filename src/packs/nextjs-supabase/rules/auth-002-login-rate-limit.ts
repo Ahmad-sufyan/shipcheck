@@ -1,10 +1,8 @@
 import type { RawFinding, Rule } from '../../../types.js';
-import { calleeName, calleeText, calls, findingAt } from '../analysis/ast-utils.js';
+import { findingAt } from '../analysis/ast-utils.js';
 import { entries } from '../analysis/entries.js';
+import { loginSignals } from '../analysis/flows.js';
 import { hasRateLimit } from '../analysis/rate-limit.js';
-
-const LOGIN_PATH = /(?:^|\/)(?:login|log-in|signin|sign-in)(?:\/|$)/i;
-const PASSWORD_CHECKS = /(?:^|\.)(?:compare|compareSync|verify)$/;
 
 export const auth002: Rule = {
   id: 'AUTH-002',
@@ -30,13 +28,9 @@ export const auth002: Rule = {
   run(ctx) {
     const findings: RawFinding[] = [];
     for (const entry of entries(ctx)) {
-      const callNames = calls(entry.node).map((call) => ({ name: calleeName(call), text: calleeText(call) }));
-      const supabaseSignIn = callNames.some((c) => c.name === 'signInWithPassword');
-      const verifiesPassword = callNames.some((c) => /bcrypt|argon|scrypt|verifyPassword|comparePassword/i.test(c.text) && (PASSWORD_CHECKS.test(c.text) || /verifyPassword|comparePassword/.test(c.name)));
-      const loginPath = entry.kind === 'route' && entry.method !== 'GET' && LOGIN_PATH.test(entry.routePath ?? '');
-      if (!loginPath && !supabaseSignIn && !verifiesPassword) continue;
-      if (hasRateLimit(entry.node, ctx, entry.routePath)) continue;
-      findings.push(findingAt(entry.node, supabaseSignIn && !verifiesPassword ? { confidence: 'low' } : {}));
+      const signals = loginSignals(entry);
+      if (!signals.login || hasRateLimit(entry.node, ctx, entry.routePath)) continue;
+      findings.push(findingAt(entry.node, signals.supabaseOnly ? { confidence: 'low' } : {}));
     }
     return findings;
   },

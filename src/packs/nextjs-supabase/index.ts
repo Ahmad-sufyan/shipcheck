@@ -1,6 +1,7 @@
 import type { RulePack } from '../../types.js';
 import { auth001 } from './rules/auth-001-weak-password-hash.js';
 import { auth002 } from './rules/auth-002-login-rate-limit.js';
+import { auth003 } from './rules/auth-003-login-enumeration.js';
 import { auth004 } from './rules/auth-004-insecure-cookie.js';
 import { auth005 } from './rules/auth-005-jwt-not-pinned.js';
 import { auth006 } from './rules/auth-006-weak-jwt-secret.js';
@@ -27,5 +28,5 @@ import { secret006SourceMaps } from './rules/secret-006-source-maps.js';
 export const nextjsSupabasePack: RulePack = {
   id: 'nextjs-supabase',
   title: 'Next.js App Router + Supabase',
-  rules: [auth001, auth002, auth004, auth005, auth006, auth007, auth010, authz001, authz002, authz003, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
+  rules: [auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth010, authz001, authz002, authz003, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
 };
