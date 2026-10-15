@@ -89,6 +89,25 @@ describe.concurrent('shipcheck CLI', () => {
     expect((await shipcheck(['scan', root, '--fail-on', 'none'], { FORCE_COLOR: '1', NO_COLOR: '1' })).stdout).not.toMatch(ANSI);
   });
 
+  it('reports HTTP-006 and SECRET-006 for fixtures/demo-app as schema-valid JSON', async () => {
+    const { exitCode, stdout } = await shipcheck(['scan', 'fixtures/demo-app', '--format', 'json']);
+    expect(exitCode).toBe(0);
+    const result = ScanResultSchema.parse(JSON.parse(stdout));
+    expect(result.target.path).toBe('fixtures/demo-app');
+    expect(result.findings.map((f) => `${f.ruleId} ${f.file}:${f.line}`)).toEqual(['SECRET-006 next.config.mjs:9', 'HTTP-006 next.config.mjs:3']);
+  });
+
+  it('exits 0 for fixtures/clean-app with --fail-on low and 1 for fixtures/demo-app with --fail-on medium', async () => {
+    expect((await shipcheck(['scan', 'fixtures/clean-app', '--fail-on', 'low'])).exitCode).toBe(0);
+    expect((await shipcheck(['scan', 'fixtures/demo-app', '--fail-on', 'medium'])).exitCode).toBe(1);
+  });
+
+  it('produces identical JSON for repeated scans apart from durationMs', async () => {
+    const [a, b] = await Promise.all([1, 2].map(() => shipcheck(['scan', 'fixtures/demo-app', '--format', 'json'])));
+    const strip = (stdout: string) => ({ ...JSON.parse(stdout), durationMs: 0 });
+    expect(strip(a!.stdout)).toEqual(strip(b!.stdout));
+  });
+
   it.each([
     [['scan', 'does-not-exist'], /Path does not exist: does-not-exist/],
     [['scan', '.', '--format', 'xml'], /argument 'xml' is invalid/],
