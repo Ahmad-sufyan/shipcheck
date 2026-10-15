@@ -37,5 +37,6 @@ jobs:
       - run: pnpm build
 
       # One command per step: on Windows, pwsh only checks the last command's exit code.
+      # --offline keeps the smoke scan deterministic: DEP-001 would otherwise query live advisory databases.
       - run: node dist/cli.js --help
-      - run: node dist/cli.js scan fixtures/clean-app --fail-on low
+      - run: node dist/cli.js scan fixtures/clean-app --offline --fail-on low
