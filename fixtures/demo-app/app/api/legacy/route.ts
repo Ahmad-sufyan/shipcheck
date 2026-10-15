@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // shipcheck-expect: INPUT-010
   const body = await request.json()
   const orders = await getCollection('orders')
   // shipcheck-expect: INPUT-002

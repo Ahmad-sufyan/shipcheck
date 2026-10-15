@@ -14,10 +14,11 @@ import { input005 } from './rules/input-005-command-injection.js';
 import { input006 } from './rules/input-006-path-traversal.js';
 import { input007 } from './rules/input-007-ssrf.js';
 import { input008 } from './rules/input-008-open-redirect.js';
+import { input010 } from './rules/input-010-no-schema-validation.js';
 import { secret006SourceMaps } from './rules/secret-006-source-maps.js';
 
 export const nextjsSupabasePack: RulePack = {
   id: 'nextjs-supabase',
   title: 'Next.js App Router + Supabase',
-  rules: [authz001, authz002, authz003, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, secret006SourceMaps],
+  rules: [authz001, authz002, authz003, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
 };
