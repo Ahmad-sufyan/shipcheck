@@ -22,6 +22,7 @@ import { authz007 } from './rules/authz-007-service-role-client.js';
 import { authz008 } from './rules/authz-008-mass-assignment.js';
 import { http006PoweredBy } from './rules/http-006-powered-by.js';
 import { input001 } from './rules/input-001-sql-injection.js';
+import { input002 } from './rules/input-002-nosql-injection.js';
 import { input003 } from './rules/input-003-dangerous-html.js';
 import { input004 } from './rules/input-004-unsanitized-markdown.js';
 import { input005 } from './rules/input-005-command-injection.js';
@@ -34,5 +35,5 @@ import { secret006SourceMaps } from './rules/secret-006-source-maps.js';
 export const nextjsSupabasePack: RulePack = {
   id: 'nextjs-supabase',
   title: 'Next.js App Router + Supabase',
-  rules: [auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth008, auth009, auth010, auth011, auth012, auth013, authz001, authz002, authz003, authz004, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
+  rules: [auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth008, auth009, auth010, auth011, auth012, auth013, authz001, authz002, authz003, authz004, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input002, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
 };
