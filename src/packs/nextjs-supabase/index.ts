@@ -1,4 +1,5 @@
 import type { RulePack } from '../../types.js';
+import { auth001 } from './rules/auth-001-weak-password-hash.js';
 import { authz001 } from './rules/authz-001-handler-without-auth.js';
 import { authz002 } from './rules/authz-002-matcher-gap.js';
 import { authz003 } from './rules/authz-003-idor.js';
@@ -20,5 +21,5 @@ import { secret006SourceMaps } from './rules/secret-006-source-maps.js';
 export const nextjsSupabasePack: RulePack = {
   id: 'nextjs-supabase',
   title: 'Next.js App Router + Supabase',
-  rules: [authz001, authz002, authz003, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
+  rules: [auth001, authz001, authz002, authz003, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input003, input004, input005, input006, input007, input008, input010, secret006SourceMaps],
 };

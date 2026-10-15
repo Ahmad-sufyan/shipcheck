@@ -291,3 +291,38 @@ export function calleeNameNode(call: CallExpression): Node {
   const callee = unwrapExpression(call.getExpression());
   return Node.isPropertyAccessExpression(callee) ? callee.getNameNode() : call;
 }
+
+export interface ImportBindings {
+  /** Local name -> exported name, for named imports and `const { a } = require(...)`. */
+  named: Map<string, string>;
+  /** Local names bound to the whole module (default, namespace or `require(...)`). */
+  namespaces: Set<string>;
+}
+
+/** How a file refers to any of `modules`: named, default and namespace imports plus CommonJS require. */
+export function importBindings(sourceFile: SourceFile, modules: readonly string[]): ImportBindings {
+  const named = new Map<string, string>();
+  const namespaces = new Set<string>();
+  for (const declaration of sourceFile.getImportDeclarations()) {
+    if (!modules.includes(declaration.getModuleSpecifierValue())) continue;
+    const whole = declaration.getNamespaceImport() ?? declaration.getDefaultImport();
+    if (whole) namespaces.add(whole.getText());
+    for (const specifier of declaration.getNamedImports()) named.set(specifier.getAliasNode()?.getText() ?? specifier.getName(), specifier.getName());
+  }
+  for (const variable of sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration)) {
+    const init = variable.getInitializer();
+    if (!init || !Node.isCallExpression(init) || init.getExpression().getText() !== 'require' || !modules.includes(stringLiteral(init.getArguments()[0]) ?? '')) continue;
+    const name = variable.getNameNode();
+    if (Node.isIdentifier(name)) namespaces.add(name.getText());
+    else if (Node.isObjectBindingPattern(name)) for (const element of name.getElements()) named.set(element.getName(), element.getPropertyNameNode()?.getText() ?? element.getName());
+  }
+  return { named, namespaces };
+}
+
+/** The module export a call refers to (`verify` for `jwt.verify()` or an imported `verify()`), if bound. */
+export function importedCallName(call: CallExpression, bindings: ImportBindings): string | undefined {
+  const callee = unwrapExpression(call.getExpression());
+  if (Node.isIdentifier(callee)) return bindings.named.get(callee.getText());
+  if (Node.isPropertyAccessExpression(callee) && bindings.namespaces.has(callee.getExpression().getText())) return callee.getName();
+  return undefined;
+}
