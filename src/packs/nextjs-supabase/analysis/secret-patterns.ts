@@ -76,6 +76,20 @@ export function looksRandom(value: string, minLength = 20, minEntropy = 3.5): bo
   return value.length >= minLength && shannonEntropy(value) > minEntropy;
 }
 
+const TOKEN_CHAR = /[A-Za-z0-9_\-+/=.]/;
+
+/**
+ * `line` with the span [start, end) masked down to its first 4 characters. The mask also swallows token
+ * characters right after the span, so a column that is off by one never exposes the tail of a secret.
+ */
+export function maskSpan(line: string, start: number, end: number): string {
+  let stop = Math.min(Math.max(end, start), line.length);
+  // Scanner matches often end with the closing quote or delimiter; keep it visible.
+  while (stop > start + 1 && /['"`;,)\s]/.test(line[stop - 1]!)) stop--;
+  while (stop < line.length && TOKEN_CHAR.test(line[stop]!)) stop++;
+  return `${line.slice(0, start)}${line.slice(start, Math.min(start + 4, stop))}****${line.slice(stop)}`;
+}
+
 /** Environment variable names that usually hold secrets. */
 export const SECRET_ENV_NAME = /SECRET|PRIVATE|SERVICE_ROLE|PASSWORD|PASSWD|API_KEY|TOKEN|CREDENTIAL/i;
 

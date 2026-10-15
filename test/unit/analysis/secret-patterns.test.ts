@@ -6,6 +6,7 @@ import {
   isSupabaseServiceJwt,
   jwtRole,
   looksRandom,
+  maskSpan,
   redactSecrets,
   SUPABASE_PATTERN_IDS,
 } from '../../../src/packs/nextjs-supabase/analysis/secret-patterns.js';
@@ -40,6 +41,23 @@ describe('findSecrets', () => {
     const text = `${FAKE.stripe} ${FAKE.supabaseSecret} ${FAKE.supabaseServiceJwt}`;
     expect(findSecrets(text).map((m) => m.id)).toEqual(['stripe-secret-key', 'supabase-secret-key', 'supabase-service-role-jwt']);
     expect(findSecrets(text, SUPABASE_PATTERN_IDS).map((m) => m.id)).toEqual(['supabase-secret-key', 'supabase-service-role-jwt']);
+  });
+});
+
+describe('maskSpan', () => {
+  const line = `key = '${FAKE.stripe}';`;
+  const start = line.indexOf('sk_');
+
+  it('keeps 4 characters and the closing delimiter', () => {
+    expect(maskSpan(line, start, start + FAKE.stripe.length + 1)).toBe("key = 'sk_t****';");
+  });
+
+  it('swallows the tail of a token when the end column is off by one', () => {
+    expect(maskSpan(line, start, start + FAKE.stripe.length - 1)).toBe("key = 'sk_t****';");
+  });
+
+  it('masks a whole generic match that starts with the key name', () => {
+    expect(maskSpan('api_key = "Zx8q2LmT9vR4pW7nB1cY"', 0, 30)).toBe('api_****"');
   });
 });
 
