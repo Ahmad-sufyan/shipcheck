@@ -23,8 +23,8 @@ describe('SECRET-003 Secret in git history', () => {
     expect(skipped).toEqual([]);
     expect(findings).toEqual([
       {
-        evidence: 'stripe-access-token in config/legacy-keys.ts:2, commit f0a1b2c (2026-09-30)',
-        explanation: expect.stringContaining('commit f0a1b2c'),
+        evidence: 'stripe-access-token in config/legacy-keys.ts:2, commit ed7ede7 (2026-09-30)',
+        explanation: expect.stringContaining('commit ed7ede7'),
         source: 'tool:gitleaks',
       },
     ]);

@@ -27,6 +27,18 @@ describe('gitleaks adapter', () => {
     });
   });
 
+  it('makes columns 1-based and inclusive: gitleaks reports them one too high after the first line', () => {
+    // Real gitleaks 8.30 output for `KEY\nconst a = 1\nexport const k = 'KEY'\n`.
+    const report = [
+      { RuleID: 'stripe-access-token', File: 'lf.ts', StartLine: 1, EndLine: 1, StartColumn: 1, EndColumn: 34 },
+      { RuleID: 'stripe-access-token', File: 'lf.ts', StartLine: 3, EndLine: 3, StartColumn: 20, EndColumn: 54 },
+    ];
+    expect(parseGitleaksReport(report)?.map((l) => [l.startLine, l.startColumn, l.endColumn])).toEqual([
+      [1, 1, 34],
+      [3, 19, 53],
+    ]);
+  });
+
   it('never carries Match or Secret into the normalized leaks', () => {
     const leaks = parseGitleaksReport(JSON.parse(recorded('gitleaks-dir-unredacted.json')));
     expect(JSON.stringify(leaks)).not.toContain(KEY.slice(0, 8));
@@ -58,7 +70,7 @@ describe('gitleaks adapter', () => {
     const { exec, calls } = fakeExec((command) => (command === 'git' ? { stdout: 'apps/web/\n' } : { exitCode: 1, stdout: nested }));
     const run = await runGitleaks(ROOT, 'git', toolContext(exec));
     expect(calls.map((c) => [c.command, ...c.args].slice(0, 3).join(' '))).toEqual(['git rev-parse --show-prefix', 'gitleaks git .']);
-    expect(run.ok && run.value.map((l) => `${l.file}:${l.startLine}@${l.commit?.slice(0, 7)}`)).toEqual(['config/legacy-keys.ts:2@f0a1b2c', 'lib/stripe.ts:4@1111111']);
+    expect(run.ok && run.value.map((l) => `${l.file}:${l.startLine}@${l.commit?.slice(0, 7)}`)).toEqual(['config/legacy-keys.ts:2@ed7ede7', 'lib/stripe.ts:4@e3a2ff3']);
   });
 
   it('skips history scans outside a git repository', async () => {

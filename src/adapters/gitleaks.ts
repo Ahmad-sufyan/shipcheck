@@ -19,6 +19,15 @@ const text = (value: unknown) => (typeof value === 'string' ? value : '');
 const int = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0);
 
 /**
+ * gitleaks counts columns from the newline before the line instead of the line's first character, so on
+ * every line but the first of the text it scanned both columns come out one too high (8.30.1). `dir` scans
+ * a file as one piece up to 100 KB, which makes line 1 the only exact one. Where this guesses wrong (the
+ * first line of a later piece or of a diff hunk), the column is one too early, and maskSpan then hides
+ * one more character instead of showing one.
+ */
+const column = (value: unknown, line: number) => Math.max(0, int(value) - (line > 1 ? 1 : 0));
+
+/**
  * Normalizes a gitleaks JSON report. Match and Secret are never read, so an unredacted report cannot leak
  * into findings. In git mode, paths are relative to the repository; `prefix` keeps the leaks under the
  * scan root and makes them relative to it. Returns undefined for an unexpected report shape.
@@ -35,14 +44,16 @@ export function parseGitleaksReport(report: unknown, prefix = ''): GitleaksLeak[
       file = file.slice(prefix.length);
     }
     if (!file) continue;
+    const startLine = int(raw.StartLine);
+    const endLine = int(raw.EndLine);
     const leak: GitleaksLeak = {
       ruleId: text(raw.RuleID),
       description: text(raw.Description),
       file,
-      startLine: int(raw.StartLine),
-      endLine: int(raw.EndLine),
-      startColumn: int(raw.StartColumn),
-      endColumn: int(raw.EndColumn),
+      startLine,
+      endLine,
+      startColumn: column(raw.StartColumn, startLine),
+      endColumn: column(raw.EndColumn, endLine),
     };
     if (text(raw.Commit)) leak.commit = text(raw.Commit);
     if (text(raw.Date)) leak.date = text(raw.Date);
