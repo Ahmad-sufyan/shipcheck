@@ -75,6 +75,18 @@ describe('normalizeFindings', () => {
     expect(findings[0]).not.toHaveProperty('cwe');
   });
 
+  it('lets a raw finding override the rule advisory default', () => {
+    const { findings } = normalizeFindings([
+      run(testRule({ advisory: false }), [{ file: 'a.ts', line: 1, evidence: 'a', advisory: true }]),
+      run(testRule({ id: 'TEST-002', advisory: true }), [{ file: 'b.ts', line: 1, evidence: 'b', advisory: false }, { file: 'c.ts', line: 1, evidence: 'c' }]),
+    ]);
+    expect(findings.map((f) => [f.file, f.advisory])).toEqual([
+      ['a.ts', true],
+      ['b.ts', false],
+      ['c.ts', true],
+    ]);
+  });
+
   it('redacts and truncates evidence before fingerprinting', () => {
     const secret = ['sk', 'live', '51FakeKeyForTests0000000000'].join('_');
     const { findings } = normalizeFindings([run(testRule(), [{ file: 'a.ts', line: 1, evidence: `const k = '${secret}' ${'y'.repeat(300)}` }])]);

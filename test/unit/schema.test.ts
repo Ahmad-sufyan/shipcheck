@@ -71,8 +71,19 @@ describe('schema', () => {
       ignorePaths: [],
       authHelpers: [],
       rateLimitHelpers: [],
+      publicPaths: [],
       rules: {},
     });
+  });
+
+  it('accepts publicPaths globs', () => {
+    expect(ShipcheckConfigSchema.parse({ publicPaths: ['/api/public/**'] }).publicPaths).toEqual(['/api/public/**']);
+    expect(ShipcheckConfigSchema.safeParse({ publicPaths: '/api/**' }).success).toBe(false);
+  });
+
+  it('accepts a per-finding advisory flag', () => {
+    expect(RawFindingSchema.parse({ evidence: 'x', advisory: true }).advisory).toBe(true);
+    expect(RawFindingSchema.safeParse({ evidence: 'x', advisory: 'yes' }).success).toBe(false);
   });
 
   it('accepts a $schema key and rule overrides', () => {
