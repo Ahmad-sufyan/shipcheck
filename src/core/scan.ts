@@ -1,6 +1,5 @@
 import { statSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
-import pkg from '../../package.json' with { type: 'json' };
 import { defaultExec, type ExecFn } from '../adapters/exec.js';
 import { buildContext } from '../context/build-context.js';
 import { compareStrings } from '../context/files.js';
@@ -9,11 +8,12 @@ import { defaultRegistry } from '../packs/index.js';
 import { severityRank } from '../schema.js';
 import type { Rule, ScanResult, Severity } from '../types.js';
 import { ShipcheckError } from './errors.js';
+import { VERSION } from './version.js';
 import { normalizeFindings } from './normalize.js';
 import { runRules } from './runner.js';
 import { computeScore } from './scoring.js';
 
-export const VERSION: string = pkg.version;
+export { VERSION } from './version.js';
 
 export interface ScanOptions {
   /** Path to a shipcheck.config.json; defaults to the one in the scan root, if any. */
