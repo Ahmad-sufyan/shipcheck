@@ -1,0 +1,72 @@
+# Copy to .github/workflows/shipcheck.yml in your app.
+#
+# static: on every pull request, scan the code and fail only on findings that are not in
+#         .shipcheck-baseline.json and are at or above fail-on.
+# live:   once a day (and on demand), check the deployed site. Run `npx shipcheck live init <url>` once,
+#         serve the printed value at /.well-known/shipcheck.txt (or in DNS), and store the contents of
+#         .shipcheck/live-secret as the SHIPCHECK_LIVE_SECRET repository secret. CLOUDFLARE_API_TOKEN
+#         (Zone Read, Zone Settings Read, Zone WAF Read) is optional and enables the Cloudflare checks.
+name: shipcheck
+
+on:
+  pull_request:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  static:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      # Pin the action to a release tag or, better, a full commit SHA.
+      - uses: Ahmad-sufyan/shipcheck@v0.1.0
+        with:
+          mode: static
+          fail-on: high
+          baseline: .shipcheck-baseline.json
+
+  live:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      # Job-level so the step condition below can see whether it is set.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Live checks (ownership-verified, read-only, at most 100 requests)
+        uses: Ahmad-sufyan/shipcheck@v0.1.0
+        with:
+          mode: live
+          live-url: https://app.example.com
+          fail-on: high
+        env:
+          SHIPCHECK_LIVE_SECRET: ${{ secrets.SHIPCHECK_LIVE_SECRET }}
+
+      - name: Cloudflare zone settings
+        if: always() && env.CLOUDFLARE_API_TOKEN != ''
+        uses: Ahmad-sufyan/shipcheck@v0.1.0
+        with:
+          mode: static
+          fail-on: high

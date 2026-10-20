@@ -1,0 +1,41 @@
+name: shipcheck
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: shipcheck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: static scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history lets SECRET-003 run gitleaks over past commits.
+          fetch-depth: 0
+
+      # Version comes from the packageManager field in package.json.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # Dogfood the action from this commit. shipcheck.config.json keeps fixtures and tests out of the scan.
+      - uses: ./
+        with:
+          path: .
+          fail-on: high
+          # Pull requests from forks get a read-only token and cannot upload SARIF.
+          upload-sarif: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
