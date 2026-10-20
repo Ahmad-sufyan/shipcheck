@@ -1,7 +1,7 @@
 import { USER_AGENT } from '../core/version.js';
 import { LiveAbort, LiveRefusal, LiveRequestError } from './errors.js';
 import { dnsResolver, resolvePublicAddress, type HostResolver, type ResolvedAddress } from './guard.js';
-import { nodeTransport, type LiveResponse, type Transport } from './transport.js';
+import { nodeTlsProbe, nodeTransport, type CertificateInfo, type LiveResponse, type TlsProbe, type Transport } from './transport.js';
 
 export type LiveMethod = 'GET' | 'HEAD' | 'POST';
 
@@ -30,6 +30,8 @@ export interface LiveClientOptions {
   probe?: RateLimitProbe;
   resolve?: HostResolver;
   transport?: Transport;
+  /** Reads the TLS certificate (LIVE-002); counted against the budget like a request. */
+  tlsProbe?: TlsProbe;
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
 }
@@ -50,6 +52,7 @@ export class LiveClient {
   readonly #allowLocal: boolean;
   readonly #resolve: HostResolver;
   readonly #transport: Transport;
+  readonly #tlsProbe: TlsProbe;
   readonly #sleep: (ms: number) => Promise<void>;
   readonly #now: () => number;
   readonly #addresses = new Map<string, Promise<ResolvedAddress>>();
@@ -67,6 +70,7 @@ export class LiveClient {
     this.#allowLocal = options.allowLocal ?? false;
     this.#resolve = options.resolve ?? dnsResolver;
     this.#transport = options.transport ?? nodeTransport;
+    this.#tlsProbe = options.tlsProbe ?? nodeTlsProbe;
     this.#sleep = options.sleep ?? realSleep;
     this.#now = options.now ?? Date.now;
   }
@@ -102,6 +106,22 @@ export class LiveClient {
     return run;
   }
 
+  /** The certificate the host presents on `port`, through the same queue, budget, spacing and address guard. */
+  certificate(port = 443): Promise<CertificateInfo> {
+    const run = this.#queue.then(async () => {
+      const address = await this.#reserve(this.origin.hostname, this.delayMs);
+      try {
+        return await this.#tlsProbe({ hostname: this.origin.hostname, port, address, timeoutMs: REQUEST_TIMEOUT_MS });
+      } catch (error) {
+        throw new LiveRequestError(`TLS connection to ${this.origin.hostname}:${port} failed: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        this.#last = this.#now();
+      }
+    });
+    this.#queue = run.catch(() => undefined);
+    return run;
+  }
+
   #check(method: string, target: string): URL {
     const url = new URL(target, this.origin);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new LiveRefusal(`shipcheck only sends http and https requests; refusing ${url.protocol}`);
@@ -122,16 +142,22 @@ export class LiveClient {
     return address;
   }
 
-  async #send(method: LiveMethod, url: URL, options: { spacingMs?: number }): Promise<LiveResponse> {
+  /** Abort state, budget, address guard and spacing for one outgoing connection, which then counts as sent. */
+  async #reserve(hostname: string, spacing: number): Promise<ResolvedAddress> {
     if (this.#aborted) throw new LiveAbort(this.#aborted);
     if (this.#sent >= this.maxRequests) throw new LiveAbort(`the request budget of ${this.maxRequests} requests is used up`);
-    const address = await this.#address(url.hostname);
-    const spacing = options.spacingMs !== undefined && this.isProbe(method, url) ? Math.max(PROBE_SPACING_MS, options.spacingMs) : this.delayMs;
+    const address = await this.#address(hostname);
     if (this.#last !== undefined) {
       const wait = this.#last + spacing - this.#now();
       if (wait > 0) await this.#sleep(wait);
     }
     this.#sent++;
+    return address;
+  }
+
+  async #send(method: LiveMethod, url: URL, options: { spacingMs?: number }): Promise<LiveResponse> {
+    const spacing = options.spacingMs !== undefined && this.isProbe(method, url) ? Math.max(PROBE_SPACING_MS, options.spacingMs) : this.delayMs;
+    const address = await this.#reserve(url.hostname, spacing);
     let response: LiveResponse;
     try {
       // Only these two headers: no cookies, no Authorization, nothing user-supplied.

@@ -1,7 +1,7 @@
 import { request as httpRequest, type IncomingMessage } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import type { LookupFunction } from 'node:net';
-import { isIP } from 'node:net';
+import { isIP, type LookupFunction } from 'node:net';
+import { connect as tlsConnect } from 'node:tls';
 import type { ResolvedAddress } from './guard.js';
 
 /** Bodies are cut off here; every check only needs the start of a response. */
@@ -88,4 +88,24 @@ export const nodeTransport: Transport = (request) =>
     );
     req.on('error', reject);
     req.end();
+  });
+
+export interface CertificateInfo {
+  validTo: Date;
+}
+
+export type TlsProbe = (request: { hostname: string; port: number; address: ResolvedAddress; timeoutMs: number }) => Promise<CertificateInfo>;
+
+/** Opens a TLS connection to the checked address (SNI = hostname), reads the certificate's expiry and closes. */
+export const nodeTlsProbe: TlsProbe = ({ hostname, port, address, timeoutMs }) =>
+  new Promise<CertificateInfo>((resolve, reject) => {
+    const socket = tlsConnect({ host: address.address, port, servername: hostname, rejectUnauthorized: false, timeout: timeoutMs }, () => {
+      const certificate = socket.getPeerCertificate();
+      socket.end();
+      const validTo = certificate.valid_to ? new Date(certificate.valid_to) : undefined;
+      if (validTo && !Number.isNaN(validTo.getTime())) resolve({ validTo });
+      else reject(new Error('the server presented no certificate'));
+    });
+    socket.on('timeout', () => socket.destroy(new Error(`timed out after ${timeoutMs} ms`)));
+    socket.on('error', reject);
   });

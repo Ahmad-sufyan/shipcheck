@@ -22,7 +22,8 @@ const leaky = {
 
 const clean = { ...leaky, 'next.config.mjs': 'export default { poweredByHeader: false }\n' };
 
-describe.concurrent('shipcheck CLI', () => {
+// Fixture scans run gitleaks and osv-scanner when they are installed, so allow for a loaded machine.
+describe.concurrent('shipcheck CLI', { timeout: 120_000 }, () => {
   it('lists the scan command in --help', async () => {
     const { exitCode, stdout } = await shipcheck(['--help']);
     expect(exitCode).toBe(0);

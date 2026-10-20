@@ -168,6 +168,21 @@ export interface ScanContext {
   skip?(check: string, reason: string): void;
 }
 
+/** The `live` section of shipcheck.config.json: what `shipcheck live` may probe. */
+export interface LiveConfig {
+  url: string;
+  /** Paths that must refuse anonymous requests (LIVE-004). */
+  protectedPaths: { path: string; method?: 'GET' | 'HEAD' }[];
+  /** The single request allowed to repeat, to see a rate limit trigger (LIVE-003); capped at 30 requests. */
+  rateLimitProbe?: { path: string; method: 'GET' | 'POST'; maxRequests: number };
+  /** Extra paths whose Set-Cookie headers LIVE-006 checks, besides /. */
+  cookiePaths: string[];
+  /** Request budget; default 60, never more than 100. */
+  maxRequests?: number;
+  /** Delay between requests; never less than 250 ms. */
+  delayMs?: number;
+}
+
 /** From shipcheck.config.json, zod-validated, all optional. */
 export interface ShipcheckConfig {
   ignorePaths: string[];
@@ -179,6 +194,7 @@ export interface ShipcheckConfig {
   /** Extra function names that count as webhook signature verification. */
   webhookVerifiers: string[];
   rules: Record<string, 'off' | Severity>;
+  live?: LiveConfig;
 }
 
 export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';

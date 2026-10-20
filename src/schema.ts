@@ -92,6 +92,17 @@ export const ScanResultSchema = z
 
 export const RuleOverrideSchema = z.union([z.literal('off'), SeveritySchema]);
 
+const UrlPathSchema = z.string().regex(/^\/(?!\/)/, 'must be a path that starts with /');
+
+export const LiveConfigSchema = z.strictObject({
+  url: z.url({ protocol: /^https?$/ }),
+  protectedPaths: z.array(z.strictObject({ path: UrlPathSchema, method: z.enum(['GET', 'HEAD']).optional() })).default([]),
+  rateLimitProbe: z.strictObject({ path: UrlPathSchema, method: z.enum(['GET', 'POST']), maxRequests: z.number().int().positive() }).optional(),
+  cookiePaths: z.array(UrlPathSchema).default([]),
+  maxRequests: z.number().int().positive().optional(),
+  delayMs: z.number().int().nonnegative().optional(),
+});
+
 export const ShipcheckConfigSchema = z
   .strictObject({
     $schema: z.string().optional(),
@@ -101,6 +112,7 @@ export const ShipcheckConfigSchema = z
     publicPaths: z.array(z.string()).default([]),
     webhookVerifiers: z.array(z.string()).default([]),
     rules: z.record(z.string(), RuleOverrideSchema).default({}),
+    live: LiveConfigSchema.optional(),
   })
   .transform(({ $schema: _schema, ...config }) => config);
 

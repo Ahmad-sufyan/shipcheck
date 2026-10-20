@@ -39,8 +39,8 @@ export function parseTarget(url: string, { allowLocal = false } = {}): URL {
   } catch {
     throw new LiveRefusal(`Not a valid URL: ${url}`);
   }
-  if (target.protocol !== 'https:' && !(allowLocal && target.protocol === 'http:')) throw new LiveRefusal(`Live checks need an https:// URL; got ${target.protocol}//${target.host}`);
   if (isIP(target.hostname.replace(/^\[|\]$/g, '')) && !allowLocal) throw new LiveRefusal(`Refusing ${target.hostname}: IP address targets are not allowed. Use the site's hostname.`);
+  if (target.protocol !== 'https:' && !(allowLocal && target.protocol === 'http:')) throw new LiveRefusal(`Live checks need an https:// URL; got ${target.protocol}//${target.host}`);
   if (target.username || target.password) throw new LiveRefusal('The live URL must not contain a user name or password.');
   return target;
 }

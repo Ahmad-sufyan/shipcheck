@@ -63,7 +63,7 @@ const LEAKS: Record<string, { type: string; body: string | Buffer }> = {
 };
 
 function send(res: ServerResponse, status: number, headers: Record<string, string | string[]>, body: string | Buffer = ''): void {
-  res.writeHead(status, headers);
+  res.writeHead(status, { 'content-length': String(Buffer.byteLength(body)), ...headers });
   res.end(body);
 }
 
@@ -132,6 +132,7 @@ export async function startMockServer(options: { mode?: MockMode; wellKnown?: We
   const handleHttp = (req: IncomingMessage, res: ServerResponse) => {
     const path = new URL(req.url ?? '/', 'http://mock.invalid').pathname;
     requests.push({ listener: 'http', method: req.method ?? 'GET', path, headers: req.headers });
+    if (state.mode === 'error') return send(res, 500, { 'content-type': 'text/plain' }, 'Internal Server Error');
     if (state.mode === 'bare') return send(res, 200, { 'content-type': 'text/html' }, HOME);
     return send(res, 301, { location: `https://127.0.0.1:${mainPort}${path}` });
   };
