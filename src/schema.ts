@@ -84,6 +84,8 @@ export const ScanResultSchema = z
     }),
     findings: z.array(FindingSchema),
     suppressedCount: z.number().int().min(0),
+    suppressed: z.array(z.object({ id: z.string(), ruleId: z.string(), reason: z.string() })),
+    warnings: z.array(z.string()),
     skipped: z.array(z.object({ check: z.string(), reason: z.string() })),
     ruleErrors: z.array(z.object({ ruleId: z.string(), message: z.string() })),
     durationMs: z.number().min(0),

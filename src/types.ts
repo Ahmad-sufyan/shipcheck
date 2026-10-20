@@ -197,6 +197,12 @@ export interface ShipcheckConfig {
   live?: LiveConfig;
 }
 
+export interface SuppressedFinding {
+  id: string;
+  ruleId: string;
+  reason: string;
+}
+
 export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
 
 export interface ScanResult {
@@ -207,6 +213,10 @@ export interface ScanResult {
   score: { value: number; grade: Grade; byCategory: Record<Category, number> };
   findings: Finding[];
   suppressedCount: number;
+  /** Findings hidden by the baseline or an inline ignore comment; they do not count toward the score. */
+  suppressed: SuppressedFinding[];
+  /** Things to fix in the setup itself: expired baseline entries, ignore comments without a reason. */
+  warnings: string[];
   skipped: { check: string; reason: string }[];
   ruleErrors: { ruleId: string; message: string }[];
   durationMs: number;

@@ -42,7 +42,7 @@ function location(finding: Finding): string | null {
 }
 
 function renderFinding(finding: Finding): string {
-  const meta = [location(finding), `confidence: ${finding.confidence}`, finding.cwe, finding.advisory ? 'advisory' : null, finding.source !== 'static' ? `source: ${finding.source}` : null]
+  const meta = [location(finding), `id: ${inlineCode(finding.id)}`, `confidence: ${finding.confidence}`, finding.cwe, finding.advisory ? 'advisory' : null, finding.source !== 'static' ? `source: ${finding.source}` : null]
     .filter(Boolean)
     .join(' · ');
   const parts = [`#### ${finding.ruleId}: ${finding.title}`, meta, codeBlock(finding.evidence, fenceLanguage(finding.file)), finding.explanation, `**Fix:** ${finding.fix}`];
@@ -65,12 +65,17 @@ export function renderMarkdown(result: ScanResult): string {
 
   out.push(`## Findings (${result.findings.length})`);
   if (!result.findings.length) out.push('No findings.');
-  if (result.suppressedCount) out.push(`${result.suppressedCount} finding(s) suppressed by shipcheck-ignore comments.`);
+  if (result.suppressedCount) out.push(`${result.suppressedCount} finding(s) suppressed by the baseline or ignore comments.`);
   for (const severity of SEVERITIES) {
     const group = result.findings.filter((f) => f.severity === severity);
     if (!group.length) continue;
     out.push(`### ${SEVERITY_HEADINGS[severity]}`);
     for (const finding of group) out.push(renderFinding(finding));
+  }
+
+  if (result.warnings.length) {
+    out.push('## Warnings');
+    out.push(result.warnings.map((w) => `- ${w}`).join('\n'));
   }
 
   out.push('## Skipped checks');

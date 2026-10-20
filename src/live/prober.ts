@@ -1,3 +1,4 @@
+import { applyBaseline, baselineFor, today } from '../core/baseline.js';
 import { normalizeFindings } from '../core/normalize.js';
 import type { RuleRun } from '../core/runner.js';
 import { computeScore } from '../core/scoring.js';
@@ -21,6 +22,9 @@ export interface LiveRunOptions {
   /** Directory holding .shipcheck/live-secret. */
   root: string;
   env?: Record<string, string | undefined>;
+  /** A baseline file; false disables it. Default: <root>/.shipcheck-baseline.json when present. */
+  baseline?: string | false;
+  today?: string;
   /** Port of the plain-HTTP listener for LIVE-002; tests point it at the mock server. Default 80. */
   httpPort?: number;
   resolve?: HostResolver;
@@ -162,14 +166,17 @@ export async function runLive(options: LiveRunOptions): Promise<LiveRun> {
   }
 
   const normalized = normalizeFindings(runs);
+  const accepted = applyBaseline(normalized.findings, baselineFor(options.root, options.baseline), options.today ?? today());
   const result: ScanResult = {
     schemaVersion: '1.0',
     tool: { name: 'shipcheck', version: VERSION },
     target: { path: target.origin.href },
     stack: [],
-    score: computeScore(normalized.findings),
-    findings: normalized.findings,
-    suppressedCount: normalized.suppressedCount,
+    score: computeScore(accepted.findings),
+    findings: accepted.findings,
+    suppressedCount: accepted.suppressed.length,
+    suppressed: accepted.suppressed,
+    warnings: accepted.warnings,
     skipped,
     ruleErrors: [...ruleErrors, ...normalized.ruleErrors],
     durationMs: Math.round(performance.now() - started),

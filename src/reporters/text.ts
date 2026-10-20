@@ -37,7 +37,8 @@ function renderFinding(finding: Finding, paint: (style: string, text: string) =>
   const tags = [finding.confidence !== 'high' ? `(confidence: ${finding.confidence})` : '', finding.advisory ? '[advisory]' : ''].filter(Boolean).join(' ');
   const lines = [`${label}  ${paint(BOLD, finding.ruleId)}  ${finding.title}${tags ? ` ${paint(DIM, tags)}` : ''}`];
   const where = finding.file ? (finding.line ? `${finding.file}:${finding.line}` : finding.file) : finding.url;
-  if (where) lines.push(`${INDENT}${where}`);
+  // The id is what `shipcheck baseline add <id>` takes.
+  lines.push(`${INDENT}${[where, paint(DIM, `id ${finding.id}`)].filter(Boolean).join('  ')}`);
   lines.push(`${INDENT}${paint(DIM, `> ${finding.evidence}`)}`);
   lines.push(`${INDENT}Fix: ${finding.fix}`);
   return lines;

@@ -8,6 +8,7 @@ import { loadUserConfig } from '../context/user-config.js';
 import { defaultRegistry } from '../packs/index.js';
 import { severityRank } from '../schema.js';
 import type { Rule, ScanResult, Severity } from '../types.js';
+import { applyBaseline, baselineFor, today } from './baseline.js';
 import { ShipcheckError } from './errors.js';
 import { VERSION } from './version.js';
 import { normalizeFindings } from './normalize.js';
@@ -31,6 +32,10 @@ export interface ScanOptions {
   cloudflare?: boolean;
   /** Used for the Cloudflare API; injected by tests. */
   fetch?: FetchFn;
+  /** A baseline file; false disables it. Default: <target>/.shipcheck-baseline.json when present. */
+  baseline?: string | false;
+  /** YYYY-MM-DD used for baseline expiry; injected by tests. */
+  today?: string;
   /** Where CLOUDFLARE_API_TOKEN is read from; defaults to process.env. */
   env?: Record<string, string | undefined>;
 }
@@ -71,15 +76,19 @@ export async function scan(target: string, options: ScanOptions = {}): Promise<S
   const rules = options.rules ?? defaultRegistry().all();
   const outcome = await runRules(rules, ctx, options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs });
   const normalized = normalizeFindings(outcome.runs, { readText: ctx.readText });
+  const accepted = applyBaseline(normalized.findings, baselineFor(root, options.baseline), options.today ?? today());
 
   return {
     schemaVersion: '1.0',
     tool: { name: 'shipcheck', version: VERSION },
     target: { path: displayPath(root) },
     stack: [...ctx.stacks],
-    score: computeScore(normalized.findings),
-    findings: normalized.findings,
-    suppressedCount: normalized.suppressedCount,
+    // Suppressed findings weigh nothing.
+    score: computeScore(accepted.findings),
+    findings: accepted.findings,
+    suppressedCount: normalized.suppressed.length + accepted.suppressed.length,
+    suppressed: [...normalized.suppressed, ...accepted.suppressed],
+    warnings: [...normalized.warnings, ...accepted.warnings],
     // Rules report skips while running concurrently; sort so reports stay deterministic.
     skipped: [...skipped, ...outcome.skipped].sort((a, b) => compareStrings(a.check, b.check) || compareStrings(a.reason, b.reason)),
     ruleErrors: [...outcome.ruleErrors, ...normalized.ruleErrors],
