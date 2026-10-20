@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "53fefe775d604332",
+      "ruleId": "DEP-001",
+      "file": "pnpm-lock.yaml",
+      "reason": "braces <= 3.0.3 (GHSA-vfj7-8cjw-p6xm) has no patched release. shipcheck reaches it only through fast-glob, and the config schema now caps ignorePaths patterns (256 characters, brace depth 2, at most 64 expansions), so a hostile shipcheck.config.json cannot trigger the stack exhaustion. Re-check when braces ships a fix.",
+      "createdAt": "2026-10-20",
+      "expires": "2027-01-31"
+    },
+    {
+      "id": "ba228e1ec2ee321f",
+      "ruleId": "DEP-001",
+      "file": "pnpm-lock.yaml",
+      "reason": "Dev-only: tsup and vite/vitest pin esbuild 0.27. GHSA-g7r4-m6w7-qqqr affects esbuild's development server on Windows, which shipcheck never runs. Upgrade once tsup and vite accept esbuild 0.28.",
+      "createdAt": "2026-10-20",
+      "expires": "2027-01-31"
+    }
+  ]
+}

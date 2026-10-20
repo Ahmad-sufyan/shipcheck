@@ -96,6 +96,41 @@ export const RuleOverrideSchema = z.union([z.literal('off'), SeveritySchema]);
 
 const UrlPathSchema = z.string().regex(/^\/(?!\/)/, 'must be a path that starts with /');
 
+/** Deepest `{...}` nesting in a glob pattern. */
+export function braceDepth(pattern: string): number {
+  let depth = 0;
+  let deepest = 0;
+  for (const char of pattern) {
+    if (char === '{') deepest = Math.max(deepest, ++depth);
+    else if (char === '}') depth = Math.max(0, depth - 1);
+  }
+  return deepest;
+}
+
+/** Upper bound on how many patterns brace expansion turns `pattern` into: the product of each group's alternatives. */
+export function braceExpansions(pattern: string): number {
+  const commas: number[] = [];
+  let total = 1;
+  for (const char of pattern) {
+    if (char === '{') commas.push(0);
+    else if (char === ',' && commas.length) commas[commas.length - 1]!++;
+    else if (char === '}' && commas.length) total *= commas.pop()! + 1;
+  }
+  return total;
+}
+
+/**
+ * ignorePaths come from the scanned project's own config, which may be untrusted (a pull request from a
+ * fork). braces <= 3.0.3, under fast-glob, overflows the stack on deeply nested brace patterns
+ * (GHSA-vfj7-8cjw-p6xm), and fast-glob expands brace alternatives, so patterns are kept short, shallow
+ * and small when expanded.
+ */
+const GlobPatternSchema = z
+  .string()
+  .max(256, 'glob patterns are limited to 256 characters')
+  .refine((pattern) => braceDepth(pattern) <= 2, 'glob patterns may nest {...} at most 2 levels deep')
+  .refine((pattern) => braceExpansions(pattern) <= 64, 'glob patterns may expand to at most 64 patterns');
+
 export const LiveConfigSchema = z.strictObject({
   url: z.url({ protocol: /^https?$/ }),
   protectedPaths: z.array(z.strictObject({ path: UrlPathSchema, method: z.enum(['GET', 'HEAD']).optional() })).default([]),
@@ -108,7 +143,7 @@ export const LiveConfigSchema = z.strictObject({
 export const ShipcheckConfigSchema = z
   .strictObject({
     $schema: z.string().optional(),
-    ignorePaths: z.array(z.string()).default([]),
+    ignorePaths: z.array(GlobPatternSchema).default([]),
     authHelpers: z.array(z.string()).default([]),
     rateLimitHelpers: z.array(z.string()).default([]),
     publicPaths: z.array(z.string()).default([]),
