@@ -1,0 +1,17 @@
+# Cloudflare Workers deployment through OpenNext.
+name = "demo-app"
+main = ".open-next/worker.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+# shipcheck-expect: INFRA-005
+workers_dev = true
+routes = [{ pattern = "app.example.com/*", zone_name = "example.com" }]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[vars]
+NEXT_PUBLIC_SITE_URL = "https://app.example.com"
+# shipcheck-expect: INFRA-005
+SESSION_SECRET = "demo-session-secret-change-me"

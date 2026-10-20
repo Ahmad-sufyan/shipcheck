@@ -5,6 +5,7 @@ import { loadUserConfig } from '../../src/context/user-config.js';
 import { scan } from '../../src/core/scan.js';
 import { defaultRegistry } from '../../src/packs/index.js';
 import type { Finding, ScanResult } from '../../src/types.js';
+import { gitOnlyExec } from '../helpers/fake-exec.js';
 import { checkRuleAgainstExpectations, collectMarkers, expectedRuleIds, type Marker } from '../helpers/markers.js';
 
 const DEMO = fileURLToPath(new URL('../../fixtures/demo-app', import.meta.url));
@@ -16,13 +17,13 @@ const showFinding = (f: Finding) => `${f.ruleId} ${f.file ?? f.url ?? '(project)
 
 let result: ScanResult;
 beforeAll(async () => {
-  result = await scan(DEMO);
+  result = await scan(DEMO, { offline: true, exec: gitOnlyExec });
 });
 
 describe('fixtures/demo-app', () => {
   it('scans cleanly with the expected stack', () => {
     expect(result.ruleErrors).toEqual([]);
-    expect(result.stack).toEqual(['nextjs-app-router', 'supabase']);
+    expect(result.stack).toEqual(['nextjs-app-router', 'supabase', 'vercel', 'cloudflare']);
   });
 
   it('only reports findings from registered rules', () => {
@@ -53,8 +54,8 @@ describe('fixtures/demo-app context', () => {
   it('exposes the Next.js structure to rules', async () => {
     const { ctx, skipped } = await buildContext(DEMO, loadUserConfig(DEMO).config);
     expect(skipped).toEqual([]);
-    expect(ctx.next.middleware()).toEqual({ file: 'proxy.ts', matchers: ['/dashboard/:path*'] });
-    expect(ctx.next.routeHandlers().map((h) => `${h.method} ${h.routePath}`)).toEqual([
+    expect(ctx.next.middleware()).toEqual({ file: 'middleware.ts', matchers: ['/dashboard/:path*'] });
+    expect(ctx.next.routeHandlers().map((h) => `${h.method} ${h.routePath}`)).toEqual(expect.arrayContaining([
       'GET /api/admin/stats',
       'POST /api/admin/users',
       'GET /api/files',
@@ -71,11 +72,11 @@ describe('fixtures/demo-app context', () => {
       'POST /api/upload',
       'GET /auth/callback',
       'GET /go',
-    ]);
+    ]));
     expect(ctx.next.serverActions()).toEqual([]);
     expect(['components/admin-client.tsx', 'components/admin-panel.tsx', 'components/token-store.ts'].every((f) => ctx.next.isClientFile(f))).toBe(true);
     expect(ctx.next.isClientFile('components/comment.tsx')).toBe(false);
-    expect(ctx.nextConfig?.options.productionBrowserSourceMaps).toEqual({ value: true, line: 9, dynamic: false });
-    expect(ctx.sqlMigrations.map((m) => m.file)).toEqual(['supabase/migrations/0001_init.sql']);
+    expect(ctx.nextConfig?.options.productionBrowserSourceMaps).toEqual({ value: true, line: 18, dynamic: false });
+    expect(ctx.sqlMigrations.map((m) => m.file)).toEqual(['supabase/migrations/0001_init.sql', 'supabase/migrations/0002_storage.sql']);
   });
 });

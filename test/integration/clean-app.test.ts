@@ -5,14 +5,17 @@ import { loadUserConfig } from '../../src/context/user-config.js';
 import { scan } from '../../src/core/scan.js';
 import { defaultRegistry } from '../../src/packs/index.js';
 import type { ScanResult } from '../../src/types.js';
+import { gitOnlyExec } from '../helpers/fake-exec.js';
 import { collectMarkers } from '../helpers/markers.js';
 
 const CLEAN = fileURLToPath(new URL('../../fixtures/clean-app', import.meta.url));
 const registry = defaultRegistry();
+/** Checks that need gitleaks or the network; the test scan runs offline with no scanners installed. */
+const TOOL_CHECKS = new Set(['DEP-001', 'SECRET-003', 'SECRET-004']);
 
 let result: ScanResult;
 beforeAll(async () => {
-  result = await scan(CLEAN);
+  result = await scan(CLEAN, { offline: true, exec: gitOnlyExec });
 });
 
 describe('fixtures/clean-app', () => {
@@ -22,8 +25,8 @@ describe('fixtures/clean-app', () => {
 
   it('scans without rule errors or skipped inputs, with a perfect score', () => {
     expect(result.ruleErrors).toEqual([]);
-    expect(result.skipped).toEqual([]);
-    expect(result.stack).toEqual(['nextjs-app-router', 'supabase']);
+    expect(result.skipped.filter((s) => !TOOL_CHECKS.has(s.check))).toEqual([]);
+    expect(result.stack).toEqual(['nextjs-app-router', 'supabase', 'vercel']);
     expect(result.score).toMatchObject({ value: 100, grade: 'A' });
   });
 

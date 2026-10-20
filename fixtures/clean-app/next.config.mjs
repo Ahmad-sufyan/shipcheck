@@ -15,7 +15,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: '*.supabase.co' }],
+    remotePatterns: [{ protocol: 'https', hostname: 'abcdefghijklmnopqrst.supabase.co' }],
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]

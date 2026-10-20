@@ -52,3 +52,13 @@ describe('createContext', () => {
     expect(ctx.getSourceFile('app/api/a/route.ts')).toBe(ctx.getSourceFile('app/api/a/route.ts'));
   });
 });
+
+describe('createContext tools and skips', () => {
+  it('exposes tool settings and collects skipped checks reported by rules', () => {
+    const exec = async () => ({ exitCode: 0, stdout: '', stderr: '', timedOut: false, missing: false });
+    const { ctx, skipped } = createContext(createMemorySource({}), config, { tools: { exec, offline: true } });
+    expect(ctx.tools).toEqual({ exec, offline: true });
+    ctx.skip?.('DEP-001', 'offline');
+    expect(skipped).toEqual([{ check: 'DEP-001', reason: 'offline' }]);
+  });
+});

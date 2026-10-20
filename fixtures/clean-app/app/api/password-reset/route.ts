@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { ipAddress } from '@vercel/functions'
 import { z } from 'zod'
 import { pool } from '@/lib/db'
 import { sendResetEmail } from '@/lib/email'
@@ -9,8 +10,8 @@ const ResetSchema = z.object({ email: z.email() })
 const GENERIC_RESPONSE = { message: 'If an account exists for that email, a reset link is on its way.' }
 
 export async function POST(request: Request) {
-  const ip = request.headers.get('x-forwarded-for') ?? 'unknown'
-  if (!rateLimit(`reset:${ip}`, 3)) {
+  const ip = ipAddress(request) ?? 'unknown'
+  if (!(await rateLimit(`reset:${ip}`))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 

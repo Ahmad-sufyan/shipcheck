@@ -1,0 +1,50 @@
+{
+  "success": true,
+  "errors": [],
+  "messages": [],
+  "result": [
+    {
+      "id": "023e105f4ecef8ad9ca31a8372d0c353",
+      "name": "example.com",
+      "status": "active",
+      "paused": false,
+      "type": "full",
+      "development_mode": 0,
+      "name_servers": ["bob.ns.cloudflare.com", "lola.ns.cloudflare.com"],
+      "original_name_servers": ["ns1.originaldnshost.com", "ns2.originaldnshost.com"],
+      "original_registrar": "GoDaddy",
+      "original_dnshost": "NameCheap",
+      "modified_on": "2026-09-01T05:20:00.12345Z",
+      "created_on": "2024-01-01T05:20:00.12345Z",
+      "activated_on": "2024-01-02T00:01:00.12345Z",
+      "meta": {
+        "step": 2,
+        "custom_certificate_quota": 0,
+        "page_rule_quota": 3,
+        "phishing_detected": false
+      },
+      "owner": { "id": "023e105f4ecef8ad9ca31a8372d0c353", "type": "user", "name": null },
+      "account": { "id": "01a7362d577a6c3019a474fd6f485823", "name": "Example Account Name" },
+      "permissions": ["#zone:read", "#zone_settings:read", "#waf:read"],
+      "plan": {
+        "id": "0feeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "name": "Free Website",
+        "price": 0,
+        "currency": "USD",
+        "frequency": "",
+        "is_subscribed": false,
+        "can_subscribe": false,
+        "legacy_id": "free",
+        "legacy_discount": false,
+        "externally_managed": false
+      }
+    }
+  ],
+  "result_info": {
+    "page": 1,
+    "per_page": 20,
+    "total_pages": 1,
+    "count": 1,
+    "total_count": 1
+  }
+}

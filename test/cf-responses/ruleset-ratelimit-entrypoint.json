@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "errors": [],
+  "messages": [],
+  "result": {
+    "id": "f0f6cd4d6f1d4e6aa2e1b1b0c3d2e1f0",
+    "name": "default",
+    "description": "",
+    "kind": "zone",
+    "version": "2",
+    "rules": [
+      {
+        "id": "8e2f4a1c9b7d4c3e8f6a5b4c3d2e1f0a",
+        "version": "1",
+        "action": "block",
+        "expression": "(http.request.uri.path wildcard \"/api/*\")",
+        "description": "Rate limit API",
+        "last_updated": "2026-09-01T05:20:00.12345Z",
+        "ref": "8e2f4a1c9b7d4c3e8f6a5b4c3d2e1f0a",
+        "enabled": true,
+        "ratelimit": {
+          "characteristics": ["cf.colo.id", "ip.src"],
+          "period": 60,
+          "requests_per_period": 100,
+          "mitigation_timeout": 600
+        }
+      }
+    ],
+    "last_updated": "2026-09-01T05:20:00.12345Z",
+    "phase": "http_ratelimit"
+  }
+}

@@ -1,0 +1,42 @@
+[
+ {
+  "RuleID": "stripe-access-token",
+  "Description": "Found a Stripe Access Token, posing a risk to payment processing services and sensitive financial data.",
+  "StartLine": 4,
+  "EndLine": 4,
+  "StartColumn": 36,
+  "EndColumn": 70,
+  "Match": "REDACTED'",
+  "Secret": "REDACTED",
+  "File": "lib/stripe.ts",
+  "SymlinkFile": "",
+  "Commit": "e3a2ff3ec50517b26efbca140a6949f0dbb47549",
+  "Entropy": 3.0274894,
+  "Author": "Demo Dev",
+  "Email": "dev@example.com",
+  "Date": "2026-10-01T09:00:00Z",
+  "Message": "add stripe client",
+  "Tags": [],
+  "Fingerprint": "e3a2ff3ec50517b26efbca140a6949f0dbb47549:lib/stripe.ts:stripe-access-token:4"
+ },
+ {
+  "RuleID": "stripe-access-token",
+  "Description": "Found a Stripe Access Token, posing a risk to payment processing services and sensitive financial data.",
+  "StartLine": 2,
+  "EndLine": 2,
+  "StartColumn": 28,
+  "EndColumn": 62,
+  "Match": "REDACTED'",
+  "Secret": "REDACTED",
+  "File": "config/legacy-keys.ts",
+  "SymlinkFile": "",
+  "Commit": "ed7ede76ababa55edd0a83b541cbc92cf124a1ff",
+  "Entropy": 3.0274894,
+  "Author": "Demo Dev",
+  "Email": "dev@example.com",
+  "Date": "2026-09-30T18:12:44Z",
+  "Message": "temporary keys for staging",
+  "Tags": [],
+  "Fingerprint": "ed7ede76ababa55edd0a83b541cbc92cf124a1ff:config/legacy-keys.ts:stripe-access-token:2"
+ }
+]

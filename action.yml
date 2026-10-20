@@ -1,0 +1,156 @@
+name: shipcheck
+description: Deterministic security checks for Next.js + Supabase apps, reported to GitHub code scanning as SARIF.
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  path:
+    description: Project directory to scan (static) or that holds shipcheck.config.json (live).
+    default: .
+  mode:
+    description: "static: scan the code. live: check the deployed site (needs SHIPCHECK_LIVE_SECRET and a verified site)."
+    default: static
+  fail-on:
+    description: Fail when a finding that is not in the baseline is at or above this severity (critical, high, medium, low, info or none).
+    default: high
+  baseline:
+    description: Baseline file of accepted findings, relative to the repository root. Ignored when the file does not exist.
+    default: .shipcheck-baseline.json
+  live-url:
+    description: Site URL for mode live. Defaults to live.url in shipcheck.config.json.
+    default: ""
+  version:
+    description: >-
+      Which shipcheck to run. "source" (the default) runs the CLI built from this action's own commit, so it is
+      pinned by the ref in `uses:`. Otherwise an exact npm package spec such as @your-scope/shipcheck@1.2.3; the
+      unscoped "shipcheck" package on npm belongs to an unrelated project and is refused.
+    default: source
+  upload-sarif:
+    description: Upload the SARIF report to GitHub code scanning (the job needs security-events write permission).
+    default: "true"
+
+outputs:
+  exit-code:
+    description: "shipcheck's exit code: 0 clean, 1 findings at or above fail-on, 2 error."
+    value: ${{ steps.scan.outputs.exit-code }}
+  sarif-file:
+    description: Path of the SARIF report.
+    value: ${{ steps.scan.outputs.sarif-file }}
+
+runs:
+  using: composite
+  steps:
+    # Pinned releases, verified against the SHA256 sums published with each release.
+    - name: Install gitleaks and osv-scanner
+      if: inputs.mode == 'static'
+      shell: bash
+      env:
+        GITLEAKS_VERSION: 8.30.1
+        OSV_SCANNER_VERSION: 2.7.0
+      run: |
+        set -euo pipefail
+        case "${RUNNER_OS}-${RUNNER_ARCH}" in
+          Linux-X64)
+            gitleaks_asset="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"; gitleaks_sha256=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+            osv_asset=osv-scanner_linux_amd64; osv_sha256=160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b ;;
+          Linux-ARM64)
+            gitleaks_asset="gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz"; gitleaks_sha256=e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080
+            osv_asset=osv-scanner_linux_arm64; osv_sha256=4061ef4c021ed3c47f203b818f337e351336cc5cd67c0274fc36bd1dfc728dd7 ;;
+          macOS-X64)
+            gitleaks_asset="gitleaks_${GITLEAKS_VERSION}_darwin_x64.tar.gz"; gitleaks_sha256=dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709
+            osv_asset=osv-scanner_darwin_amd64; osv_sha256=e82c5df7ab0a42dff29a1cd0660711447b56b4c0483ff66ad8634df10fd81a45 ;;
+          macOS-ARM64)
+            gitleaks_asset="gitleaks_${GITLEAKS_VERSION}_darwin_arm64.tar.gz"; gitleaks_sha256=b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5
+            osv_asset=osv-scanner_darwin_arm64; osv_sha256=d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b ;;
+          *)
+            echo "::warning title=shipcheck::No pinned gitleaks/osv-scanner build for ${RUNNER_OS}-${RUNNER_ARCH}; secret and dependency checks fall back to built-in patterns or are skipped."
+            exit 0 ;;
+        esac
+        verify() {
+          if command -v sha256sum >/dev/null; then echo "$1  $2" | sha256sum --check --strict; else echo "$1  $2" | shasum -a 256 --check; fi
+        }
+        bin="${RUNNER_TEMP}/shipcheck-tools"
+        mkdir -p "$bin"
+        cd "$bin"
+        curl -fsSL --retry 3 -o "$gitleaks_asset" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${gitleaks_asset}"
+        verify "$gitleaks_sha256" "$gitleaks_asset"
+        tar -xzf "$gitleaks_asset" gitleaks
+        curl -fsSL --retry 3 -o "$osv_asset" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/${osv_asset}"
+        verify "$osv_sha256" "$osv_asset"
+        mv "$osv_asset" osv-scanner
+        chmod +x gitleaks osv-scanner
+        echo "$bin" >> "$GITHUB_PATH"
+
+    # With version "source", build the CLI from the action's own checkout unless it is already built
+    # (this repository's own workflow builds it first).
+    - name: Build shipcheck from the action source
+      if: inputs.version == 'source'
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -f "${GITHUB_ACTION_PATH}/dist/cli.js" ]; then exit 0; fi
+        major="$(node -p 'process.versions.node.split(".")[0]')"
+        if [ "$major" -lt 22 ]; then
+          echo "::error title=shipcheck::Node.js 22.12 or newer is required (found $(node --version)); add actions/setup-node before this action."
+          exit 1
+        fi
+        cd "$GITHUB_ACTION_PATH"
+        npx --yes pnpm@12.11.2 install --frozen-lockfile
+        npx --yes pnpm@12.11.2 run build
+
+    # Inputs reach the script through env, never interpolated into it. The exit code is kept for the
+    # last step so the SARIF upload still runs when findings fail the check.
+    - name: Run shipcheck
+      id: scan
+      shell: bash
+      env:
+        TARGET_PATH: ${{ inputs.path }}
+        MODE: ${{ inputs.mode }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        BASELINE: ${{ inputs.baseline }}
+        LIVE_URL: ${{ inputs.live-url }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        set +e
+        sarif="${RUNNER_TEMP}/shipcheck-${MODE}.sarif"
+        if [ "$VERSION" = "source" ]; then
+          cli=(node "${GITHUB_ACTION_PATH}/dist/cli.js")
+        elif [[ "$VERSION" =~ ^@[a-z0-9][a-z0-9._~-]*/[a-z0-9][a-z0-9._~-]*@[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+          cli=(npx --yes "$VERSION")
+        else
+          echo "::error title=shipcheck::version must be \"source\" or an exact scoped npm spec like @your-scope/shipcheck@1.2.3; got '${VERSION}'"
+          echo "exit-code=2" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        args=(--format sarif --out "$sarif" --fail-on "$FAIL_ON" --md-summary "$GITHUB_STEP_SUMMARY")
+        if [ -n "$BASELINE" ] && [ -f "$BASELINE" ]; then args+=(--baseline "$BASELINE"); fi
+        case "$MODE" in
+          static)
+            if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then args+=(--cloudflare); fi
+            "${cli[@]}" scan "$TARGET_PATH" "${args[@]}"
+            code=$? ;;
+          live)
+            command=(live --root "$TARGET_PATH")
+            if [ -n "$LIVE_URL" ]; then command+=("$LIVE_URL"); fi
+            "${cli[@]}" "${command[@]}" "${args[@]}"
+            code=$? ;;
+          *)
+            echo "::error title=shipcheck::mode must be static or live, got '${MODE}'"
+            code=2 ;;
+        esac
+        if [ -f "$sarif" ]; then echo "sarif-file=$sarif" >> "$GITHUB_OUTPUT"; fi
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+
+    - name: Upload SARIF to code scanning
+      if: inputs.upload-sarif == 'true' && steps.scan.outputs.sarif-file != ''
+      uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+      with:
+        sarif_file: ${{ steps.scan.outputs.sarif-file }}
+        category: shipcheck-${{ inputs.mode }}
+
+    - name: Exit with the scan's exit code
+      shell: bash
+      env:
+        EXIT_CODE: ${{ steps.scan.outputs.exit-code }}
+      run: exit "${EXIT_CODE:-2}"

@@ -1,0 +1,52 @@
+[
+  {
+    "package": "next",
+    "major": 12,
+    "minVersion": "15.5.24",
+    "advisory": "GHSA-2xp9-vwfh-vxw4",
+    "severity": "critical",
+    "summary": "Next.js: Unauthenticated Remote Code Execution in Image Optimization API when AVIF files are used",
+    "source": "https://github.com/advisories/GHSA-2xp9-vwfh-vxw4",
+    "checkedOn": "2026-10-15"
+  },
+  {
+    "package": "next",
+    "major": 13,
+    "minVersion": "15.5.24",
+    "advisory": "GHSA-2xp9-vwfh-vxw4",
+    "severity": "critical",
+    "summary": "Next.js: Unauthenticated Remote Code Execution in Image Optimization API when AVIF files are used",
+    "source": "https://github.com/advisories/GHSA-2xp9-vwfh-vxw4",
+    "checkedOn": "2026-10-15"
+  },
+  {
+    "package": "next",
+    "major": 14,
+    "minVersion": "15.5.24",
+    "advisory": "GHSA-2xp9-vwfh-vxw4",
+    "severity": "critical",
+    "summary": "Next.js: Unauthenticated Remote Code Execution in Image Optimization API when AVIF files are used",
+    "source": "https://github.com/advisories/GHSA-2xp9-vwfh-vxw4",
+    "checkedOn": "2026-10-15"
+  },
+  {
+    "package": "next",
+    "major": 15,
+    "minVersion": "15.5.24",
+    "advisory": "GHSA-2xp9-vwfh-vxw4",
+    "severity": "critical",
+    "summary": "Next.js: Unauthenticated Remote Code Execution in Image Optimization API when AVIF files are used",
+    "source": "https://github.com/advisories/GHSA-2xp9-vwfh-vxw4",
+    "checkedOn": "2026-10-15"
+  },
+  {
+    "package": "next",
+    "major": 16,
+    "minVersion": "16.3.8",
+    "advisory": "GHSA-cjq9-62q9-8jv4 / CVE-2026-94483",
+    "severity": "high",
+    "summary": "Next.js has Server-Side Request Forgery in Image Optimization",
+    "source": "https://github.com/advisories/GHSA-cjq9-62q9-8jv4",
+    "checkedOn": "2026-10-15"
+  }
+]

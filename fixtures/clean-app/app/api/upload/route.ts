@@ -6,6 +6,10 @@ const MAX_BYTES = 5 * 1024 * 1024
 const EXTENSIONS: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }
 
 export async function POST(request: Request) {
+  // The upload form posts with the session cookie, so only accept submissions from our own origin.
+  if (request.headers.get('origin') !== new URL(request.url).origin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
   const supabase = await createClient()
   const {
     data: { user },

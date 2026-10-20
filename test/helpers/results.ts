@@ -36,6 +36,8 @@ export function makeResult(findings: Finding[] = [], overrides: Partial<ScanResu
     score: computeScore(findings),
     findings,
     suppressedCount: 0,
+    suppressed: [],
+    warnings: [],
     skipped: [],
     ruleErrors: [],
     durationMs: 42,

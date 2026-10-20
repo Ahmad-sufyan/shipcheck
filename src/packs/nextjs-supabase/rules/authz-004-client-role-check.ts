@@ -3,24 +3,11 @@ import type { RawFinding, Rule } from '../../../types.js';
 import { calleeName, findingAt, sourceFiles, staticText } from '../analysis/ast-utils.js';
 import { isHttpCall } from '../analysis/db-write.js';
 import { entries } from '../analysis/entries.js';
+import { routeRegex } from '../analysis/route-match.js';
 
 const ROLE_VALUE = /^(?:admin|superadmin|super_admin|owner|staff|moderator)$/i;
 const ROLE_SUBJECT = /role|isAdmin|is_admin|admin/i;
 const SERVER_ROLE_CHECK = /['"`](?:admin|superadmin|super_admin|owner|staff|moderator)['"`]|\brole\b|\bisAdmin\b|\bis_admin\b|\bpermissions?\b|\bauthorize\s*\(|\bcan\(/i;
-
-/** `/api/admin/users/[id]` -> /^\/api\/admin\/users\/[^/]+$/ */
-function routeRegex(routePath: string): RegExp {
-  const source = routePath
-    .split('/')
-    .map((segment) => {
-      if (/^\[\[\.\.\..+\]\]$/.test(segment)) return '(?:/.*)?';
-      if (/^\[\.\.\..+\]$/.test(segment)) return '/.+';
-      if (/^\[.+\]$/.test(segment)) return '/[^/]+';
-      return segment ? `/${segment.replace(/[.+*?^${}()|[\]\\]/g, '\\$&')}` : '';
-    })
-    .join('');
-  return new RegExp(`^${source || '/'}$`);
-}
 
 export const authz004: Rule = {
   id: 'AUTHZ-004',

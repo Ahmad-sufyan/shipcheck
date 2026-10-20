@@ -1,4 +1,9 @@
 import type { RulePack } from '../../types.js';
+import { infra001 } from './rules/infra-001-cloudflare-tls.js';
+import { infra002 } from './rules/infra-002-always-use-https.js';
+import { infra003 } from './rules/infra-003-waf-rules.js';
+import { infra004 } from './rules/infra-004-next-config-options.js';
+import { infra005 } from './rules/infra-005-wrangler-config.js';
 import { auth001 } from './rules/auth-001-weak-password-hash.js';
 import { auth002 } from './rules/auth-002-login-rate-limit.js';
 import { auth003 } from './rules/auth-003-login-enumeration.js';
@@ -20,6 +25,20 @@ import { authz005 } from './rules/authz-005-rls-disabled.js';
 import { authz006 } from './rules/authz-006-permissive-policy.js';
 import { authz007 } from './rules/authz-007-service-role-client.js';
 import { authz008 } from './rules/authz-008-mass-assignment.js';
+import { data001 } from './rules/data-001-sensitive-logs.js';
+import { data002 } from './rules/data-002-over-exposed-response.js';
+import { data003 } from './rules/data-003-public-bucket.js';
+import { data004 } from './rules/data-004-auth-audit-log.js';
+import { dep001 } from './rules/dep-001-vulnerable-dependency.js';
+import { dep002 } from './rules/dep-002-lockfile.js';
+import { dep003 } from './rules/dep-003-install-script.js';
+import { dep004 } from './rules/dep-004-typosquat.js';
+import { dep005 } from './rules/dep-005-framework-below-fix.js';
+import { http001 } from './rules/http-001-csp.js';
+import { http002 } from './rules/http-002-security-headers.js';
+import { http003 } from './rules/http-003-unsafe-cors.js';
+import { http004 } from './rules/http-004-csrf.js';
+import { http005 } from './rules/http-005-error-leak.js';
 import { http006PoweredBy } from './rules/http-006-powered-by.js';
 import { input001 } from './rules/input-001-sql-injection.js';
 import { input002 } from './rules/input-002-nosql-injection.js';
@@ -33,10 +52,27 @@ import { input009 } from './rules/input-009-unvalidated-upload.js';
 import { input010 } from './rules/input-010-no-schema-validation.js';
 import { input011 } from './rules/input-011-redos.js';
 import { input012 } from './rules/input-012-prototype-pollution.js';
+import { integ001 } from './rules/integ-001-webhook-signature.js';
+import { integ002 } from './rules/integ-002-cron-secret.js';
+import { integ003 } from './rules/integ-003-client-price.js';
+import { integ004 } from './rules/integ-004-llm-key-client.js';
+import { integ005 } from './rules/integ-005-system-prompt-input.js';
+import { rate001 } from './rules/rate-001-sensitive-endpoint.js';
+import { rate002 } from './rules/rate-002-ai-endpoint.js';
+import { rate003 } from './rules/rate-003-memory-limiter.js';
+import { rate004 } from './rules/rate-004-spoofable-key.js';
+import { rate005 } from './rules/rate-005-form-bot-protection.js';
+import { secret001 } from './rules/secret-001-public-env-secret.js';
+import { secret002 } from './rules/secret-002-env-committed.js';
+import { secret003 } from './rules/secret-003-git-history.js';
+import { secret004 } from './rules/secret-004-hardcoded-secret.js';
+import { secret005 } from './rules/secret-005-client-reachable-secret.js';
 import { secret006SourceMaps } from './rules/secret-006-source-maps.js';
+import { secret007 } from './rules/secret-007-env-example-values.js';
+import { secret008 } from './rules/secret-008-env-validation.js';
 
 export const nextjsSupabasePack: RulePack = {
   id: 'nextjs-supabase',
   title: 'Next.js App Router + Supabase',
-  rules: [auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth008, auth009, auth010, auth011, auth012, auth013, authz001, authz002, authz003, authz004, authz005, authz006, authz007, authz008, http006PoweredBy, input001, input002, input003, input004, input005, input006, input007, input008, input009, input010, input011, input012, secret006SourceMaps],
+  rules: [infra001, infra002, infra003, infra004, infra005, auth001, auth002, auth003, auth004, auth005, auth006, auth007, auth008, auth009, auth010, auth011, auth012, auth013, authz001, authz002, authz003, authz004, authz005, authz006, authz007, authz008, data001, data002, data003, data004, dep001, dep002, dep003, dep004, dep005, http001, http002, http003, http004, http005, http006PoweredBy, input001, input002, input003, input004, input005, input006, input007, input008, input009, input010, input011, input012, integ001, integ002, integ003, integ004, integ005, rate001, rate002, rate003, rate004, rate005, secret001, secret002, secret003, secret004, secret005, secret006SourceMaps, secret007, secret008],
 };

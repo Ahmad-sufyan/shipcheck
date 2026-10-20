@@ -1,14 +1,20 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { defaultRegistry } from '../../src/packs/index.js';
 import { ScanResultSchema } from '../../src/schema.js';
 import { shipcheck } from '../helpers/cli.js';
 import { tmpProject } from '../helpers/context.js';
 
 const ANSI = /\x1b\[[0-9;]*m/;
 
+/** Turns off every rule except `ids`, so later rules do not change what these CLI tests see. */
+const only = (ids: string[], extra: Record<string, string> = {}) =>
+  JSON.stringify({ rules: { ...Object.fromEntries(defaultRegistry().all().filter((r) => !ids.includes(r.id)).map((r) => [r.id, 'off'])), ...extra } });
+
 /** One low (HTTP-006) and one medium (SECRET-006) finding. */
 const leaky = {
+  'shipcheck.config.json': only(['SECRET-006', 'HTTP-006']),
   'package.json': JSON.stringify({ dependencies: { next: '16.4.1' } }),
   'app/page.tsx': 'export default function Page() { return null }',
   'next.config.mjs': 'const nextConfig = {\n  productionBrowserSourceMaps: true,\n}\nexport default nextConfig\n',
@@ -16,7 +22,8 @@ const leaky = {
 
 const clean = { ...leaky, 'next.config.mjs': 'export default { poweredByHeader: false }\n' };
 
-describe.concurrent('shipcheck CLI', () => {
+// Fixture scans run gitleaks and osv-scanner when they are installed, so allow for a loaded machine.
+describe.concurrent('shipcheck CLI', { timeout: 120_000 }, () => {
   it('lists the scan command in --help', async () => {
     const { exitCode, stdout } = await shipcheck(['--help']);
     expect(exitCode).toBe(0);
@@ -76,8 +83,20 @@ describe.concurrent('shipcheck CLI', () => {
     expect(ScanResultSchema.parse(JSON.parse(readFileSync(out, 'utf8'))).findings).toHaveLength(2);
   });
 
+  it('skips network lookups with --offline and lists the flag in help', async () => {
+    const root = tmpProject({
+      'package.json': JSON.stringify({ name: 'x', private: true, dependencies: { next: '16.4.1' } }),
+      'package-lock.json': JSON.stringify({ name: 'x', lockfileVersion: 3, packages: { '': {}, 'node_modules/next': { version: '16.4.1' } } }),
+      'shipcheck.config.json': only(['DEP-001']),
+    });
+    const { exitCode, stdout } = await shipcheck(['scan', root, '--offline', '--format', 'json']);
+    expect(exitCode).toBe(0);
+    expect(JSON.parse(stdout).skipped).toContainEqual({ check: 'DEP-001', reason: expect.stringContaining('--offline') });
+    expect((await shipcheck(['scan', '--help'])).stdout).toContain('--offline');
+  });
+
   it('uses --config', async () => {
-    const root = tmpProject({ ...leaky, 'strict.json': '{"rules":{"HTTP-006":"critical"}}' });
+    const root = tmpProject({ ...leaky, 'strict.json': only(['SECRET-006', 'HTTP-006'], { 'HTTP-006': 'critical' }) });
     const { exitCode, stdout } = await shipcheck(['scan', root, '--config', join(root, 'strict.json'), '--format', 'json']);
     expect(exitCode).toBe(1);
     expect(JSON.parse(stdout).findings[0]).toMatchObject({ ruleId: 'HTTP-006', severity: 'critical' });
@@ -90,20 +109,20 @@ describe.concurrent('shipcheck CLI', () => {
   });
 
   it('reports HTTP-006 and SECRET-006 for fixtures/demo-app as schema-valid JSON', async () => {
-    const { exitCode, stdout } = await shipcheck(['scan', 'fixtures/demo-app', '--format', 'json', '--fail-on', 'none']);
+    const { exitCode, stdout } = await shipcheck(['scan', 'fixtures/demo-app', '--offline', '--format', 'json', '--fail-on', 'none']);
     expect(exitCode).toBe(0);
     const result = ScanResultSchema.parse(JSON.parse(stdout));
     expect(result.target.path).toBe('fixtures/demo-app');
-    expect(result.findings.map((f) => `${f.ruleId} ${f.file}:${f.line}`)).toEqual(expect.arrayContaining(['SECRET-006 next.config.mjs:9', 'HTTP-006 next.config.mjs:3']));
+    expect(result.findings.map((f) => `${f.ruleId} ${f.file}:${f.line}`)).toEqual(expect.arrayContaining(['SECRET-006 next.config.mjs:18', 'HTTP-006 next.config.mjs:3']));
   });
 
   it('exits 0 for fixtures/clean-app with --fail-on low and 1 for fixtures/demo-app with --fail-on medium', async () => {
-    expect((await shipcheck(['scan', 'fixtures/clean-app', '--fail-on', 'low'])).exitCode).toBe(0);
-    expect((await shipcheck(['scan', 'fixtures/demo-app', '--fail-on', 'medium'])).exitCode).toBe(1);
+    expect((await shipcheck(['scan', 'fixtures/clean-app', '--offline', '--fail-on', 'low'])).exitCode).toBe(0);
+    expect((await shipcheck(['scan', 'fixtures/demo-app', '--offline', '--fail-on', 'medium'])).exitCode).toBe(1);
   });
 
   it('produces identical JSON for repeated scans apart from durationMs', async () => {
-    const [a, b] = await Promise.all([1, 2].map(() => shipcheck(['scan', 'fixtures/demo-app', '--format', 'json'])));
+    const [a, b] = await Promise.all([1, 2].map(() => shipcheck(['scan', 'fixtures/demo-app', '--offline', '--format', 'json'])));
     const strip = (stdout: string) => ({ ...JSON.parse(stdout), durationMs: 0 });
     expect(strip(a!.stdout)).toEqual(strip(b!.stdout));
   });

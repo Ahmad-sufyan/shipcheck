@@ -1,0 +1,267 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderSarif > matches the snapshot 1`] = `
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "properties": {
+        "grade": "F",
+        "score": 49,
+        "suppressedCount": 0,
+        "target": "fixtures/demo-app",
+      },
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "fixtures/demo-app/app/api/admin/route.ts",
+                  "uriBaseId": "%SRCROOT%",
+                },
+                "region": {
+                  "startColumn": 3,
+                  "startLine": 12,
+                },
+              },
+            },
+          ],
+          "message": {
+            "text": "Anyone can call this route.",
+          },
+          "partialFingerprints": {
+            "shipcheck/v1": "<id>",
+          },
+          "properties": {
+            "advisory": false,
+            "confidence": "high",
+            "evidence": "productionBrowserSourceMaps: true,",
+            "fix": "Remove \`productionBrowserSourceMaps\`.",
+            "severity": "critical",
+            "source": "static",
+          },
+          "ruleId": "AUTHZ-001",
+          "ruleIndex": 0,
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "fixtures/demo-app/next.config.mjs",
+                  "uriBaseId": "%SRCROOT%",
+                },
+                "region": {
+                  "startLine": 6,
+                },
+              },
+            },
+          ],
+          "message": {
+            "text": "Anyone can download readable copies of your front-end code.",
+          },
+          "partialFingerprints": {
+            "shipcheck/v1": "<id>",
+          },
+          "properties": {
+            "advisory": false,
+            "confidence": "high",
+            "evidence": "productionBrowserSourceMaps: true,",
+            "fix": "Remove \`productionBrowserSourceMaps\`.",
+            "severity": "medium",
+            "source": "static",
+          },
+          "ruleId": "SECRET-006",
+          "ruleIndex": 2,
+        },
+        {
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "fixtures/demo-app/package.json",
+                  "uriBaseId": "%SRCROOT%",
+                },
+                "region": {
+                  "startLine": 1,
+                },
+              },
+            },
+          ],
+          "message": {
+            "text": "Missing env vars fail late.",
+          },
+          "partialFingerprints": {
+            "shipcheck/v1": "<id>",
+          },
+          "properties": {
+            "advisory": true,
+            "confidence": "high",
+            "evidence": "process.env is read but never validated",
+            "fix": "Remove \`productionBrowserSourceMaps\`.",
+            "severity": "info",
+            "source": "static",
+          },
+          "ruleId": "SECRET-008",
+          "ruleIndex": 3,
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "shipcheck.config.json",
+                  "uriBaseId": "%SRCROOT%",
+                },
+                "region": {
+                  "startLine": 1,
+                },
+              },
+            },
+          ],
+          "message": {
+            "text": "Headers are missing. (https://app.example.com/)",
+          },
+          "partialFingerprints": {
+            "shipcheck/v1": "<id>",
+          },
+          "properties": {
+            "advisory": false,
+            "confidence": "high",
+            "evidence": "GET /: missing CSP",
+            "fix": "Remove \`productionBrowserSourceMaps\`.",
+            "severity": "medium",
+            "source": "live",
+          },
+          "ruleId": "LIVE-001",
+          "ruleIndex": 1,
+        },
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://github.com/Ahmad-sufyan/shipcheck",
+          "name": "shipcheck",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "error",
+              },
+              "fullDescription": {
+                "text": "Route handlers that never check the session.",
+              },
+              "help": {
+                "markdown": "**Fix:** Check the session.",
+                "text": "Check the session.",
+              },
+              "id": "AUTHZ-001",
+              "name": "RouteWithoutAuth",
+              "properties": {
+                "precision": "high",
+                "problem.severity": "error",
+                "security-severity": "9.5",
+                "tags": [
+                  "security",
+                  "authorization",
+                ],
+              },
+              "shortDescription": {
+                "text": "Route without auth",
+              },
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning",
+              },
+              "fullDescription": {
+                "text": "A rule used by tests.",
+              },
+              "help": {
+                "markdown": "**Fix:** Default fix.",
+                "text": "Default fix.",
+              },
+              "id": "LIVE-001",
+              "name": "SecurityHeadersNotServed",
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "security-severity": "5.5",
+                "tags": [
+                  "security",
+                  "live",
+                ],
+              },
+              "shortDescription": {
+                "text": "Security headers not served",
+              },
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning",
+              },
+              "fullDescription": {
+                "text": "A rule used by tests.",
+              },
+              "help": {
+                "markdown": "**Fix:** Default fix.
+
+- <https://nextjs.org/docs>",
+                "text": "Default fix.",
+              },
+              "helpUri": "https://nextjs.org/docs",
+              "id": "SECRET-006",
+              "name": "ProductionBrowserSourceMapsEnabled",
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "security-severity": "5.5",
+                "tags": [
+                  "security",
+                  "secrets",
+                  "external/cwe/cwe-540",
+                ],
+              },
+              "shortDescription": {
+                "text": "Production browser source maps enabled",
+              },
+            },
+            {
+              "defaultConfiguration": {
+                "level": "note",
+              },
+              "fullDescription": {
+                "text": "A rule used by tests.",
+              },
+              "help": {
+                "markdown": "**Fix:** Default fix.",
+                "text": "Default fix.",
+              },
+              "id": "SECRET-008",
+              "name": "NoStartupValidationOfEnvironmentVariables",
+              "properties": {
+                "precision": "high",
+                "problem.severity": "recommendation",
+                "security-severity": "0.0",
+                "tags": [
+                  "security",
+                  "secrets",
+                ],
+              },
+              "shortDescription": {
+                "text": "No startup validation of environment variables",
+              },
+            },
+          ],
+          "semanticVersion": "0.1.0",
+          "version": "0.1.0",
+        },
+      },
+    },
+  ],
+  "version": "2.1.0",
+}
+`;

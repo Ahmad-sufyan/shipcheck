@@ -1,4 +1,5 @@
 import type { Node, SourceFile } from 'ts-morph';
+import type { ToolContext } from './adapters/exec.js';
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type Confidence = 'high' | 'medium' | 'low';
@@ -36,6 +37,8 @@ export interface RawFinding {
   confidence?: Confidence;
   /** Overrides the rule's advisory default for this finding. */
   advisory?: boolean;
+  /** Overrides the rule's source, e.g. when a rule falls back from one tool to another. */
+  source?: FindingSource;
 }
 
 /** What the report contains. */
@@ -82,6 +85,8 @@ export interface Rule {
   falsePositiveNote: string;
   cwe?: string;
   references?: string[];
+  /** Overrides the runner's per-rule timeout; tool-backed rules need longer than the 10 s default. */
+  timeoutMs?: number;
   run(ctx: ScanContext): RawFinding[] | Promise<RawFinding[]>;
 }
 
@@ -146,6 +151,8 @@ export interface ScanContext {
   /** Populated from wrangler.toml, or from wrangler.jsonc / wrangler.json when no TOML file exists. */
   wranglerToml: { file: string; data: unknown } | null;
   gitignore: { file: string; patterns: string[] } | null;
+  /** Browser bundles from a local `next build` (every .js file under .next/static); the regular file list ignores .next. */
+  nextStaticFiles: readonly string[];
   next: {
     routeHandlers(): RouteHandler[];
     serverActions(): ServerAction[];
@@ -155,6 +162,25 @@ export interface ScanContext {
     isClientFile(file: string): boolean;
   };
   config: ShipcheckConfig;
+  /** How external tools are run (injectable exec, offline mode). Absent when tools are disabled. */
+  tools?: ToolContext;
+  /** Records a check that could not run (missing tool, offline, ...) in ScanResult.skipped. */
+  skip?(check: string, reason: string): void;
+}
+
+/** The `live` section of shipcheck.config.json: what `shipcheck live` may probe. */
+export interface LiveConfig {
+  url: string;
+  /** Paths that must refuse anonymous requests (LIVE-004). */
+  protectedPaths: { path: string; method?: 'GET' | 'HEAD' }[];
+  /** The single request allowed to repeat, to see a rate limit trigger (LIVE-003); capped at 30 requests. */
+  rateLimitProbe?: { path: string; method: 'GET' | 'POST'; maxRequests: number };
+  /** Extra paths whose Set-Cookie headers LIVE-006 checks, besides /. */
+  cookiePaths: string[];
+  /** Request budget; default 60, never more than 100. */
+  maxRequests?: number;
+  /** Delay between requests; never less than 250 ms. */
+  delayMs?: number;
 }
 
 /** From shipcheck.config.json, zod-validated, all optional. */
@@ -165,7 +191,16 @@ export interface ShipcheckConfig {
   rateLimitHelpers: string[];
   /** Globs of intentionally public route paths, e.g. '/api/public/**'. */
   publicPaths: string[];
+  /** Extra function names that count as webhook signature verification. */
+  webhookVerifiers: string[];
   rules: Record<string, 'off' | Severity>;
+  live?: LiveConfig;
+}
+
+export interface SuppressedFinding {
+  id: string;
+  ruleId: string;
+  reason: string;
 }
 
 export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
@@ -178,6 +213,10 @@ export interface ScanResult {
   score: { value: number; grade: Grade; byCategory: Record<Category, number> };
   findings: Finding[];
   suppressedCount: number;
+  /** Findings hidden by the baseline or an inline ignore comment; they do not count toward the score. */
+  suppressed: SuppressedFinding[];
+  /** Things to fix in the setup itself: expired baseline entries, ignore comments without a reason. */
+  warnings: string[];
   skipped: { check: string; reason: string }[];
   ruleErrors: { ruleId: string; message: string }[];
   durationMs: number;

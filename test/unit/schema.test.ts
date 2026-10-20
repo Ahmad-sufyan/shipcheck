@@ -42,6 +42,8 @@ function result(overrides: Partial<ScanResult> = {}): ScanResult {
     score: { value: 99, grade: 'A', byCategory },
     findings: [finding],
     suppressedCount: 0,
+    suppressed: [],
+    warnings: [],
     skipped: [],
     ruleErrors: [],
     durationMs: 12,
@@ -72,6 +74,7 @@ describe('schema', () => {
       authHelpers: [],
       rateLimitHelpers: [],
       publicPaths: [],
+      webhookVerifiers: [],
       rules: {},
     });
   });

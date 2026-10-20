@@ -1,11 +1,13 @@
 import { compareStrings, lineAt } from '../context/files.js';
 import { RawFindingSchema, severityRank } from '../schema.js';
-import type { Finding, RawFinding, Rule, ScanResult } from '../types.js';
+import type { Finding, RawFinding, Rule, ScanResult, SuppressedFinding } from '../types.js';
 import { fingerprint } from './fingerprint.js';
 import { redactEvidence } from './redact.js';
 import type { RuleRun } from './runner.js';
 
 const IGNORE_COMMENT = /shipcheck-ignore:?\s+([A-Z][A-Z0-9]*-\d+(?:\s*,\s*[A-Z][A-Z0-9]*-\d+)*)/;
+/** `shipcheck-ignore-next-line RULE-ID[, RULE-ID]: reason`, honoured only with a reason. */
+const NEXT_LINE_IGNORE = /shipcheck-ignore-next-line\s+([A-Z][A-Z0-9]*-\d+(?:\s*,\s*[A-Z][A-Z0-9]*-\d+)*)(.*)$/;
 /** A line that holds only a comment (JS, JSX, SQL or shell style). */
 const COMMENT_ONLY = /^\s*(?:\/\/|\/\*|\*|#|--|\{\s*\/\*)/;
 
@@ -16,7 +18,11 @@ export interface NormalizeOptions {
 
 export interface NormalizedFindings {
   findings: Finding[];
+  /** Hidden by ignore comments, with their reasons. */
+  suppressed: SuppressedFinding[];
   suppressedCount: number;
+  /** Ignore comments that could not be honoured. */
+  warnings: string[];
   ruleErrors: ScanResult['ruleErrors'];
 }
 
@@ -36,7 +42,7 @@ export function toFinding(rule: Rule, raw: RawFinding): Finding {
     severity: raw.severity ?? rule.severity,
     confidence: raw.confidence ?? rule.confidence,
     advisory: raw.advisory ?? rule.advisory ?? false,
-    source: rule.source ?? 'static',
+    source: raw.source ?? rule.source ?? 'static',
     file,
     line: raw.line ?? null,
     column: raw.column ?? null,
@@ -64,24 +70,35 @@ export function compareFindings(a: Finding, b: Finding): number {
   );
 }
 
-function isSuppressed(finding: Finding, readText: NormalizeOptions['readText']): boolean {
-  if (!readText || finding.file === null || finding.line === null) return false;
+/** A suppressing comment: a reason to hide the finding, or a warning about a comment that cannot be honoured. */
+type Suppression = { reason: string } | { warning: string };
+
+function suppression(finding: Finding, readText: NormalizeOptions['readText']): Suppression | undefined {
+  if (!readText || finding.file === null || finding.line === null) return undefined;
   let text: string;
   try {
     text = readText(finding.file);
   } catch {
-    return false;
+    return undefined;
+  }
+  const above = lineAt(text, finding.line - 1);
+  const nextLine = NEXT_LINE_IGNORE.exec(above);
+  if (nextLine?.[1]?.split(/\s*,\s*/).includes(finding.ruleId)) {
+    const reason = /^\s*:\s*(.*?)\s*(?:\*\/\s*\}?)?\s*$/.exec(nextLine[2] ?? '')?.[1] ?? '';
+    if (reason) return { reason };
+    return { warning: `${finding.file}:${finding.line - 1}: shipcheck-ignore-next-line without a reason is ignored; write \`shipcheck-ignore-next-line RULE-ID: reason\`` };
   }
   const ignores = (line: string) => IGNORE_COMMENT.exec(line)?.[1]?.split(/\s*,\s*/).includes(finding.ruleId) ?? false;
-  const above = lineAt(text, finding.line - 1);
-  return ignores(lineAt(text, finding.line)) || (COMMENT_ONLY.test(above) && ignores(above));
+  if (ignores(lineAt(text, finding.line)) || (COMMENT_ONLY.test(above) && ignores(above))) return { reason: 'shipcheck-ignore comment' };
+  return undefined;
 }
 
 /** Validates, redacts, fingerprints, applies ignore comments, sorts and dedupes rule output. */
 export function normalizeFindings(runs: readonly RuleRun[], options: NormalizeOptions = {}): NormalizedFindings {
   const ruleErrors: NormalizedFindings['ruleErrors'] = [];
   const all: Finding[] = [];
-  let suppressedCount = 0;
+  const suppressed: SuppressedFinding[] = [];
+  const warnings = new Set<string>();
 
   for (const { rule, findings } of runs) {
     for (const raw of findings) {
@@ -92,13 +109,18 @@ export function normalizeFindings(runs: readonly RuleRun[], options: NormalizeOp
         continue;
       }
       const finding = toFinding(rule, parsed.data);
-      if (isSuppressed(finding, options.readText)) suppressedCount++;
-      else all.push(finding);
+      const hidden = suppression(finding, options.readText);
+      if (hidden && 'reason' in hidden) {
+        suppressed.push({ id: finding.id, ruleId: finding.ruleId, reason: hidden.reason });
+        continue;
+      }
+      if (hidden) warnings.add(hidden.warning);
+      all.push(finding);
     }
   }
 
   all.sort(compareFindings);
   const seen = new Set<string>();
   const findings = all.filter((finding) => !seen.has(finding.id) && seen.add(finding.id));
-  return { findings, suppressedCount, ruleErrors };
+  return { findings, suppressed, suppressedCount: suppressed.length, ruleErrors, warnings: [...warnings] };
 }

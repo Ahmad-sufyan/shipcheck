@@ -4,6 +4,7 @@ import path from 'node:path'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// shipcheck-expect: HTTP-004
 export async function POST(request: Request) {
   const supabase = await createClient()
   const {

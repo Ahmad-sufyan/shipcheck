@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "errors": [],
+  "messages": [],
+  "result": {
+    "id": "2f2feab2026849078ba485f918791bdc",
+    "name": "default",
+    "description": "",
+    "kind": "zone",
+    "version": "3",
+    "rules": [
+      {
+        "id": "3a03d665bac047339bb530ecb439a90d",
+        "version": "1",
+        "action": "block",
+        "expression": "(http.request.uri.path contains \"/wp-login.php\")",
+        "description": "Block WordPress login probes",
+        "last_updated": "2026-09-01T05:20:00.12345Z",
+        "ref": "3a03d665bac047339bb530ecb439a90d",
+        "enabled": true
+      }
+    ],
+    "last_updated": "2026-09-01T05:20:00.12345Z",
+    "phase": "http_request_firewall_custom"
+  }
+}

@@ -87,6 +87,11 @@ describe('normalizeFindings', () => {
     ]);
   });
 
+  it('lets a raw finding override the rule source', () => {
+    const { findings } = normalizeFindings([run(testRule({ source: 'tool:osv' }), [{ evidence: 'a', source: 'tool:npm-audit' }, { evidence: 'b' }])]);
+    expect(findings.map((f) => f.source).sort()).toEqual(['tool:npm-audit', 'tool:osv']);
+  });
+
   it('redacts and truncates evidence before fingerprinting', () => {
     const secret = ['sk', 'live', '51FakeKeyForTests0000000000'].join('_');
     const { findings } = normalizeFindings([run(testRule(), [{ file: 'a.ts', line: 1, evidence: `const k = '${secret}' ${'y'.repeat(300)}` }])]);
@@ -147,5 +152,38 @@ describe('normalizeFindings', () => {
     );
     expect(findings.map((f) => f.line)).toEqual([4]);
     expect(suppressedCount).toBe(2);
+  });
+
+  it('honours shipcheck-ignore-next-line only with a reason, and warns about the ones without', () => {
+    const files: Record<string, string> = {
+      'a.ts': [
+        '// shipcheck-ignore-next-line TEST-001: input is an enum checked above',
+        'bad()',
+        '// shipcheck-ignore-next-line TEST-001',
+        'bad2()',
+        '{/* shipcheck-ignore-next-line OTHER-001, TEST-001: rendered server-side only */}',
+        'bad3()',
+        '-- shipcheck-ignore-next-line OTHER-001: not this rule',
+        'bad4()',
+      ].join('\n'),
+    };
+    const result = normalizeFindings(
+      [
+        run(testRule(), [
+          { file: 'a.ts', line: 2, evidence: 'bad()' },
+          { file: 'a.ts', line: 4, evidence: 'bad2()' },
+          { file: 'a.ts', line: 6, evidence: 'bad3()' },
+          { file: 'a.ts', line: 8, evidence: 'bad4()' },
+        ]),
+      ],
+      { readText: (file) => files[file] ?? '' },
+    );
+    expect(result.findings.map((f) => f.line)).toEqual([4, 8]);
+    expect(result.suppressed.map((s) => [s.ruleId, s.reason])).toEqual([
+      ['TEST-001', 'input is an enum checked above'],
+      ['TEST-001', 'rendered server-side only'],
+    ]);
+    expect(result.suppressedCount).toBe(2);
+    expect(result.warnings).toEqual(['a.ts:3: shipcheck-ignore-next-line without a reason is ignored; write `shipcheck-ignore-next-line RULE-ID: reason`']);
   });
 });

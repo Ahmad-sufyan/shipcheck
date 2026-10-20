@@ -1,0 +1,13 @@
+# gitleaks config for this repository: keep the default rules, but skip the deliberately fake
+# secrets planted in test fixtures and recorded tool outputs.
+title = "shipcheck"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Fake secrets in fixtures and recorded tool outputs"
+paths = [
+  '''(?:^|[\\/])fixtures[\\/]''',
+  '''(?:^|[\\/])test[\\/]tool-outputs[\\/]''',
+]
