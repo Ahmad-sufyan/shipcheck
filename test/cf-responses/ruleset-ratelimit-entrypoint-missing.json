@@ -1,0 +1,11 @@
+{
+  "success": false,
+  "errors": [
+    {
+      "code": 10003,
+      "message": "could not find entrypoint ruleset in the http_ratelimit phase"
+    }
+  ],
+  "messages": [],
+  "result": null
+}

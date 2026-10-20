@@ -30,6 +30,7 @@ interface ReportFlags {
 
 interface ScanFlags extends ReportFlags {
   offline?: boolean;
+  cloudflare?: boolean;
 }
 
 interface LiveFlags extends ReportFlags {
@@ -68,7 +69,7 @@ function emitReport(result: ScanResult, flags: ReportFlags): number {
 }
 
 async function runScan(path: string, flags: ScanFlags): Promise<number> {
-  const result = await scan(path, { ...(flags.config === undefined ? {} : { configFile: flags.config }), offline: flags.offline === true });
+  const result = await scan(path, { ...(flags.config === undefined ? {} : { configFile: flags.config }), offline: flags.offline === true, cloudflare: flags.cloudflare === true });
   return emitReport(result, flags);
 }
 
@@ -99,6 +100,7 @@ async function main(argv: string[]): Promise<number> {
     'path to a shipcheck.config.json (default: <path>/shipcheck.config.json)',
   )
     .option('--offline', 'skip checks that need the network (vulnerability database lookups for DEP-001)')
+    .option('--cloudflare', 'read Cloudflare zone settings for INFRA-001..003 with a read-only CLOUDFLARE_API_TOKEN (GET requests only)')
     .action(async (path: string, flags: ScanFlags) => {
       exitCode = await runScan(path, flags);
     });

@@ -3,7 +3,16 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: '*.supabase.co' }],
+    // shipcheck-expect: INFRA-004
+    remotePatterns: [{ protocol: 'https', hostname: '**' }],
+    // shipcheck-expect: INFRA-004
+    dangerouslyAllowSVG: true,
+  },
+  experimental: {
+    serverActions: {
+      // shipcheck-expect: INFRA-004
+      allowedOrigins: ['*'],
+    },
   },
   // shipcheck-expect: SECRET-006
   productionBrowserSourceMaps: true,

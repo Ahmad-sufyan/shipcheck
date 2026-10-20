@@ -2,6 +2,7 @@ import { statSync } from 'node:fs';
 import { delimiter, isAbsolute, join } from 'node:path';
 import { execa } from 'execa';
 import { redactEvidence } from '../core/redact.js';
+import type { FetchFn } from '../infra/cloudflare.js';
 
 /** External tools get two minutes; the runner extends tool-backed rules' timeouts to match. */
 export const TOOL_TIMEOUT_MS = 120_000;
@@ -28,6 +29,8 @@ export interface ToolContext {
   exec: ExecFn;
   /** Skip adapters that need the network (vulnerability database lookups). */
   offline: boolean;
+  /** Set by --cloudflare: INFRA rules may read zone settings through the Cloudflare API (GET only). */
+  cloudflare?: { token?: string; fetch?: FetchFn };
 }
 
 function isFile(path: string): boolean {
