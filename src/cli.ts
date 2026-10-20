@@ -7,9 +7,11 @@ import { BASELINE_FILE, baselineEntry, loadBaseline, loadBaselineIfPresent, prun
 import { ShipcheckError } from './core/errors.js';
 import { filterFindings, hasBlockingFindings, scan, VERSION, type ScanOptions } from './core/scan.js';
 import { formatSetup, initOwnership } from './live/ownership.js';
-import { formatPlan, LEGAL_WARNING, liveTarget, planLive, runLive } from './live/prober.js';
+import { formatPlan, LEGAL_WARNING, LIVE_CHECKS, liveTarget, planLive, runLive } from './live/prober.js';
+import { defaultRegistry } from './packs/index.js';
 import { renderJson } from './reporters/json.js';
 import { renderMarkdown } from './reporters/markdown.js';
+import { renderSarif, type SarifRule } from './reporters/sarif.js';
 import { renderText, shouldUseColor } from './reporters/text.js';
 import { SEVERITIES } from './schema.js';
 import type { ScanResult, Severity } from './types.js';
@@ -19,7 +21,7 @@ const EXIT_OK = 0;
 const EXIT_FINDINGS = 1;
 const EXIT_ERROR = 2;
 
-const FORMATS = ['text', 'json', 'md'] as const;
+const FORMATS = ['text', 'json', 'md', 'sarif'] as const;
 
 interface ReportFlags {
   format: (typeof FORMATS)[number];
@@ -67,12 +69,14 @@ function addReportOptions(command: Command, configHelp: string, baselineHelp: st
     .option('--no-baseline', 'report every finding, ignoring the baseline file');
 }
 
-function emitReport(result: ScanResult, flags: ReportFlags): number {
+/** `rules` describe the checks in SARIF output: the registry for scan, the live checks for live. */
+function emitReport(result: ScanResult, flags: ReportFlags, rules: readonly SarifRule[]): number {
   for (const warning of result.warnings) process.stderr.write(`shipcheck: warning: ${warning}\n`);
   const shown = filterFindings(result, flags.minSeverity);
   let report: string;
   if (flags.format === 'json') report = renderJson(shown);
   else if (flags.format === 'md') report = renderMarkdown(shown);
+  else if (flags.format === 'sarif') report = renderSarif(shown, rules);
   else report = renderText(shown, { color: !flags.out && shouldUseColor(process.env, process.stdout.isTTY) });
 
   if (flags.out) {
@@ -94,7 +98,7 @@ async function runScan(path: string, flags: ScanFlags): Promise<number> {
     offline: flags.offline === true,
     cloudflare: flags.cloudflare === true,
   });
-  return emitReport(result, flags);
+  return emitReport(result, flags, defaultRegistry().all());
 }
 
 async function runLiveCommand(url: string | undefined, flags: LiveFlags): Promise<number> {
@@ -114,7 +118,7 @@ async function runLiveCommand(url: string | undefined, flags: LiveFlags): Promis
     env: process.env,
   });
   process.stderr.write(`shipcheck: ownership verified via ${verifiedBy === 'dns' ? 'DNS TXT record' : 'the well-known file'}; ${requestsSent} requests sent\n`);
-  return emitReport(result, flags);
+  return emitReport(result, flags, LIVE_CHECKS);
 }
 
 // ---------------------------------------------------------------------------------------------

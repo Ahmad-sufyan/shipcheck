@@ -14,6 +14,7 @@ export {
   ScanResultSchema,
   SeveritySchema,
   ShipcheckConfigSchema,
+  LiveConfigSchema,
   StackIdSchema,
   scanResultJsonSchema,
   severityRank,
@@ -33,3 +34,9 @@ export { allRules, defaultRegistry, packs } from './packs/index.js';
 export { renderJson } from './reporters/json.js';
 export { renderMarkdown } from './reporters/markdown.js';
 export { renderText, shouldUseColor } from './reporters/text.js';
+export { renderSarif, SECURITY_SEVERITY, SARIF_SCHEMA_URI, type SarifRule } from './reporters/sarif.js';
+export { applyBaseline, baselineFor, loadBaseline, pruneBaseline, writeBaseline, BaselineSchema, BASELINE_FILE, type Baseline, type BaselineEntry } from './core/baseline.js';
+export { runLive, planLive, formatPlan, liveTarget, LIVE_CHECKS, type LiveRun, type LiveRunOptions } from './live/prober.js';
+export { initOwnership, verifyOwnership, hashSecret } from './live/ownership.js';
+export { LiveRefusal } from './live/errors.js';
+export { cloudflareZoneReport } from './infra/cloudflare.js';
